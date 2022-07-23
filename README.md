@@ -1,37 +1,19 @@
-# Trackmania Menu Bg Chooser
+# Trackmania Menu Bg Reflections
 
-This let's you choose the main menu background. You can choose from:
+This plugin let's you modify the reflection of the car in main menu backgrounds. It's spun-off of [Menu Background Chooser](https://openplanet.dev/plugin/menu-bg-chooser).
 
-* A custom time of day (morning, day, evening, or night).
-* A custom png, jpg, or webm file (via URL).
-* TMX monthly backgrounds (the current month, a random month, or your choice).
+There are only two parameters: "opacity" and "angle". Neither is intuitive, but it's fun to mess around with nonetheless.
 
-To return to normal, select "Disabled" in settings.
+After you install the plugin, you need to go to a new menu, then back to the main menu for the plugin to start working.
 
-If you want more control over menu reflections, search for [Menu Background Reflections](https://openplanet.dev/plugin/menu-bg-refls) in the plugin manager.
+**Note! This plugin uses developer hooks and thus may be fragile!**
 
 License: Public Domain
 
-Authors: XertroV, Greep
+Authors: XertroV
 
 Suggestions/feedback: @XertroV on Openplanet discord
 
-Code/issues: [https://github.com/XertroV/tm-menu-bg-chooser](https://github.com/XertroV/tm-menu-bg-chooser)
+Code/issues: [https://github.com/XertroV/tm-menu-bg-refls](https://github.com/XertroV/tm-menu-bg-refls)
 
 GL HF
-
-### Notes
-
-- `ComponentProfilePlayerInfo_frame-global`
-  - Player profile page (world map background)
-    - BG: `file://Media/Manialinks/Nadeo/TMNext/Menus/PageProfile/UI_profile_background_map_gradients.png` -- child 0 (quad)
-    - `ComponentProfilePlayerInfo_quad-lights` (`file://Media/Manialinks/Nadeo/TMNext/Menus/PageProfile/UI_profile_background_map_lights.png`) -- fake lights that 'shine' on the player's car
-    - `ComponentProfilePlayerInfo_frame-world` (frame holding 3x quads that draw land/sea outlines)
-
-Media\ManiaApps\Nadeo\TMNext\TrackMania\MainMenu.Script.txt
-
-- club page (activities)
-  - main club page bg: `quad-page-background`
-  - admin bg: `quad-page-background`
-  - example of custom bg: `https://trackmania-prod-nls-file-store-s3.cdn.ubi.com/club/background/17/61cb74f2dc8e4.png?updateTimestamp=1640723706.png`
-  - default bg: `file://Media/Manialinks/Nadeo/TMNext/Menus/PageClub/UI_club_background_default.dds`
