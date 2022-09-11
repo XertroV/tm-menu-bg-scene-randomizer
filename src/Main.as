@@ -3,6 +3,7 @@
 void Main() {
     // we do stuff through coros so settings have a chance to load
     startnew(SetUpReflsIntercept);
+    startnew(SetPilotLocCoro);
 }
 
 // special variables used by _PlaneReflectEnable1
@@ -73,4 +74,78 @@ void OnSettingsChanged() {
 
 void SetUpReflsIntercept() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "PlaneReflectEnable1", _PlaneReflectEnable1);
+    Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneCreate", _SceneCreate);
+    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemCreate", _ItemCreate);
+    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetLocation", _ItemSetLocation);
+
+    // Dev::InterceptProc("CTrackManiaMenus", "DialogCreateGhost_OnSaveReplay", _DialogCreateGhost_OnSaveReplay);
+    // Dev::InterceptProc("CTrackManiaMenus", "DialogInGameMenuAdvanced_OnSaveReplay", _DialogInGameMenuAdvanced_OnSaveReplay);
+    // Dev::InterceptProc("CGamePlaygroundClientScriptAPI", "SaveReplay", _SaveReplay);
+    // GI::GetMenuManager().DialogCreateGhost_OnSaveReplay();
+
+    /* ideas re ghost: can the ghost be extracted from a multiplayer replay?
+       if so, then it could be extracted and then recombined as in ghost to reply
+       */
+
+    // auto players = GI::GetCurrentPlayground().Players;
+    // for (uint i = 0; i < players.Length; i++) {
+    //     auto g = GI::GetMenuCustom().ScoreMgr.Playground_GetPlayerGhost(cast<CSmPlayer>(players[i]).ScriptAPI);
+    //     print(players[i].User.Name + " is ghost null? " + (g is null ? true : false));
+    // }
+    // auto s = cast<CSmScriptPlayer>(cast<CSmPlayer>(players[0]).ScriptAPI).Score;
+    // auto replayInfos = GI::GetMenuManager().ReplayInfos;
+    // print(replayInfos.Length);
+    // replayInfos.Remove(replayInfos.Length - 1);
+    // GI::GetTmApp().ScanDiskForReplays();
+    // print(replayInfos.Length);
+    // print("s.BestRaceTimes.Length: " + s.BestRaceTimes.Length);
+    // print("s.PrevRaceTimes.Length: " + s.PrevRaceTimes.Length);
+    // print("s.BestLapTimes.Length: " + s.BestLapTimes.Length);
+    // print("s.PrevLapTimes.Length: " + s.PrevLapTimes.Length);
+    // // for (uint i = 0)
+    // // Replay_RefreshFromDisk
+    // auto cmapg = GI::GetNetwork().ClientManiaAppPlayground;
+    // auto scoreMgr = cmapg.ScoreMgr;
+    // auto map = GI::app.RootMap;
+    // auto userId = cmapg.UserMgr.Users[0].Id;
+    // auto pb = scoreMgr.Map_GetRecord_v2(userId, map.MapInfo.MapUid, "PersonalBest", "", "TimeAttack", "");
+    // print("pb: " + pb);
+    // scoreMgr.Map_SetRecord_v2(userId, map.MapInfo.MapUid, "TimeAttack", "", )
 }
+
+// bool _DialogCreateGhost_OnSaveReplay(CMwStack &in stack, CMwNod@ nod) {
+//     print('\\$6f9 _DialogCreateGhost_OnSaveReplay; nod: ' + nod.IdName);
+//     print('-----');
+//     PrintDebug(nod);
+//     print('url: ' + stack.CurrentString());
+//     print('-----');
+//     ExploreNod("the rules mode.", nod);
+//     return true;
+// }
+
+// bool _DialogInGameMenuAdvanced_OnSaveReplay(CMwStack &in stack, CMwNod@ nod) {
+//     print('\\$6f9 _DialogInGameMenuAdvanced_OnSaveReplay; nod: ' + nod.IdName);
+//     print('-----');
+//     PrintDebug(nod);
+//     print('url: ' + stack.CurrentString());
+//     print('-----');
+//     ExploreNod("the rules mode.", nod);
+//     return true;
+// }
+
+// bool _SaveReplay(CMwStack &in stack, CMwNod@ nod) {
+//     print('\\$6f9 _SaveReplay; nod: ' + nod.IdName);
+//     print('-----');
+//     PrintDebug(nod);
+//     // print('url: ' + stack.CurrentString());
+//     print('-----');
+//     ExploreNod("the rules mode.", nod);
+//     return true;
+// }
+
+// void PrintDebug(CMwNod@ nod) {
+//     auto t = Reflection::TypeOf(nod);
+//     print('t.Name: ' + t.Name);
+//     print('t.UserName: ' + t.UserName);
+//     print('t.ID: ' + t.ID);
+// }
