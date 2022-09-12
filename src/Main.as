@@ -78,6 +78,12 @@ void SetUpReflsIntercept() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemCreate", _ItemCreate);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetLocation", _ItemSetLocation);
 
+    // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Assign_AutoPilot", _Vehicle_Assign_AutoPilot);
+    // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Create", _Vehicle_Create);
+    // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_CreateWithOwner", _Vehicle_CreateWithOwner);
+
+    // Dev::InterceptProc("CSmArenaRulesMode", "ActionLoad", _ActionLoad);
+
     // Dev::InterceptProc("CTrackManiaMenus", "DialogCreateGhost_OnSaveReplay", _DialogCreateGhost_OnSaveReplay);
     // Dev::InterceptProc("CTrackManiaMenus", "DialogInGameMenuAdvanced_OnSaveReplay", _DialogInGameMenuAdvanced_OnSaveReplay);
     // Dev::InterceptProc("CGamePlaygroundClientScriptAPI", "SaveReplay", _SaveReplay);

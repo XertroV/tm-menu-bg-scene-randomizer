@@ -11,9 +11,11 @@ MwId SceneId;
 MwId CarItemId;
 MwId PilotItemId;
 MwId Pilot2ItemId;
+MwId Pilot3ItemId;
 CGameMenuSceneScriptManager@ MsmFromItemCreate;
 
 bool allowCarSportItem = false;
+bool lastCreateWasCar = false;
 
 // MwId SceneId, wstring ModelName, wstring SkinName, string SkinUrl
 bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
@@ -27,30 +29,44 @@ bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
     print("SkinName: " + SkinName);
     print("ModelName: " + ModelName);
     print("SceneId: " + SceneId.GetName());
-    if (ModelName == "CarSport") {
-        if (allowCarSportItem) return true;
-        allowCarSportItem = true;
-        CarItemId = _msm.ItemCreate(SceneId, wstring(ModelName), SkinName, SkinUrl);
-        allowCarSportItem = false;
-        // set position as per main menu script
-        // _msm.ItemSetLocation(SceneId, CarItemId, vec3(-1.8, 0., -0.5), -218., true);
-        _msm.ItemSetLocation(SceneId, CarItemId, vec3(-.5, 0., -0.5), -218., true);
+
+    bool prevWasCar = lastCreateWasCar;
+    lastCreateWasCar = ModelName == "CarSport";
+
+    // if (ModelName == "CarSport") {
+    //     if (allowCarSportItem) return true;
+    //     allowCarSportItem = true;
+    //     CarItemId = _msm.ItemCreate(SceneId, wstring(ModelName), SkinName, SkinUrl);
+    //     allowCarSportItem = false;
+    //     // set position as per main menu script
+    //     // _msm.ItemSetLocation(SceneId, CarItemId, vec3(-1.8, 0., -0.5), -218., true);
+    //     _msm.ItemSetLocation(SceneId, CarItemId, vec3(-.5, 0., -0.5), -218., true);
 
     // }
-    // if (SkinName == "Skins\\Models\\HelmetPilot\\Stadium.zip") {
+    if (SkinName == "Skins\\Models\\HelmetPilot\\Stadium.zip") {
+        string charModel = "CharacterPilot\\StadiumMale.zip";
+        // string charModel = "HelmetPilot\\Stadium.zip";  // does not work w/ alt-player-skin
+        float initCarPos = -1.8;
+        float xShift = .75;
+        if (prevWasCar) {
+            _msm.ItemSetLocation(SceneId, CarItemId, vec3(initCarPos + xShift, 0., -0.5), -218., false);
+        }
 
         // PilotItemId = _msm.ItemCreate(SceneId, wstring(ModelName), wstring("Skins\\Models\\CharacterPilot\\StadiumFemale.zip"), SkinUrl);
-        PilotItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\CharacterPilot\\StadiumFemale.zip"), "");
-        _msm.ItemSetLocation(SceneId, PilotItemId, vec3(-0.85, 0.0, -.5), 140., false); // good pos next car on stage left
-        // _msm.ItemSetLocation(SceneId, PilotItemId, vec3(-1.78, -.8, -.6), 130., false); // looks like pilot is driving car
-        _msm.ItemAttachTo(SceneId, PilotItemId, CarItemId);
+        PilotItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\" + charModel), "");
+        // _msm.ItemSetLocation(SceneId, PilotItemId, vec3(-0.85, 0.0, -.5), 140., false); // good pos next to car on stage left
+        _msm.ItemSetLocation(SceneId, PilotItemId, vec3(-.85 + xShift, 0.0, -.5), 140., false); // good pos next to moved car on stage left
+        Pilot3ItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\" + charModel), "");
+        _msm.ItemSetLocation(SceneId, Pilot3ItemId, vec3(-1.78, -.8, -.6), 130., false); // looks like pilot is driving car
+        _msm.ItemAttachTo(SceneId, Pilot3ItemId, CarItemId); // puts pilot in car
         // runAnimCoro = true;
-        Pilot2ItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\CharacterPilot\\StadiumFemale.zip"), SkinUrl);
-        _msm.ItemSetLocation(SceneId, Pilot2ItemId, vec3(-0.60, 0.0, -3.5), 140., false); // close up on right of screen
-        _msm.CameraSetFromItem(SceneId, Pilot2ItemId);
+        Pilot2ItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\" + charModel), "");
+        // _msm.CameraSetFromItem(SceneId, Pilot2ItemId);
+        // _msm.ItemSetLocation(SceneId, Pilot2ItemId, vec3(-0.60, 0.0, -3.5), 140., false); // close up on right of screen when combined with set camera
+        _msm.ItemSetLocation(SceneId, Pilot2ItemId, vec3(-.73, -.5, -7.0), 80., false); // close up on right of screen
 
         _msm.ItemSetPlayerState(SceneId, CarItemId, vec3(1., 0., 1.), vec3(1., 1., 0.), "42", "XRT");
-        _msm.ItemSetVehicleState(SceneId, CarItemId, -.5, true, true, 0, 2, false);
+        // _msm.ItemSetVehicleState(SceneId, CarItemId, -.5, true, true, 0, 2, false);
         // _msm.ItemSetPlayerState(SceneId, Pilot2ItemId, vec3(1., 0., 0.), vec3(1., 0., 0.), "", "HELLO");
         // _msm.ItemSetLocation(SceneId, pilot2, vec3(-2.65, 1.0, 3.0), 120., false);
         // _msm.CameraSetLocation1(SceneId, vec3(1.45, 2.25, -9.), 2., 40.);
@@ -88,14 +104,45 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
     vec3 Position = stack.CurrentVec3(2);
     MwId ItemId = stack.CurrentId(3);
     MwId SceneId = stack.CurrentId(4);
-    print("IsTurntable: " + (IsTurntable ? 't' : 'f'));
-    print("AngleDeg: " + AngleDeg);
-    print("Position: " + Vec3Str(Position));
-    print("ItemId: " + ItemId.GetName());
-    print("SceneId: " + SceneId.GetName());
+    if (lastCreateWasCar) CarItemId = ItemId;
+    // print("IsTurntable: " + (IsTurntable ? 't' : 'f'));
+    // print("AngleDeg: " + AngleDeg);
+    // print("Position: " + Vec3Str(Position));
+    // print("ItemId: " + ItemId.GetName());
+    // print("SceneId: " + SceneId.GetName());
     return true;
 }
 
 string Vec3Str(vec3 v) {
     return "(" + v.x + ", " + v.y + ", " + v.z + ")";
+}
+
+
+
+// CGameScriptMgrVehicle.Vehicle_Assign_AutoPilot
+// :: void Vehicle_Assign_AutoPilot(CGameScriptVehicle@ Vehicle, string ModelName)
+bool _Vehicle_Assign_AutoPilot(CMwStack &in stack, CMwNod@ nod) {
+    CGameScriptMgrVehicle@ smv = cast<CGameScriptMgrVehicle>(nod);
+    string ModelName = stack.CurrentString(0);
+    CGameScriptVehicle@ Vehicle = cast<CGameScriptVehicle>(stack.CurrentNod(1));
+    print("ModelName: " + ModelName);
+    print("Vehicle.IdName: " + Vehicle.IdName);
+    return true;
+}
+
+bool _Vehicle_Create(CMwStack &in stack, CMwNod@ nod) {
+    print("VEHICLE CREATE");
+    return true;
+}
+
+bool _Vehicle_CreateWithOwner(CMwStack &in stack, CMwNod@ nod) {
+    print("VEHICLE CREATE WITH OWNER");
+    return true;
+}
+
+
+
+bool _ActionLoad(CMwStack &in stack, CMwNod@ nod) {
+    print(">> ActionLoad");
+    return true;
 }
