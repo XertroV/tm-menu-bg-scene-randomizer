@@ -17,6 +17,10 @@ CGameMenuSceneScriptManager@ MsmFromItemCreate;
 bool allowCarSportItem = false;
 bool lastCreateWasCar = false;
 
+// for modifying car position but letting the menu animations run, still
+vec3 initCarPos = vec3(-1.8, 0.0, -.5);
+float xShift = .75;
+
 // MwId SceneId, wstring ModelName, wstring SkinName, string SkinUrl
 bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
     auto _msm = cast<CGameMenuSceneScriptManager>(nod);
@@ -46,11 +50,10 @@ bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
     if (SkinName == "Skins\\Models\\HelmetPilot\\Stadium.zip") {
         string charModel = "CharacterPilot\\StadiumMale.zip";
         // string charModel = "HelmetPilot\\Stadium.zip";  // does not work w/ alt-player-skin
-        float initCarPos = -1.8;
-        float xShift = .75;
-        if (prevWasCar) {
-            _msm.ItemSetLocation(SceneId, CarItemId, vec3(initCarPos + xShift, 0., -0.5), -218., false);
-        }
+
+        // if (prevWasCar) {
+        //     _msm.ItemSetLocation(SceneId, CarItemId, vec3(initCarPos.x + xShift, initCarPos.y, initCarPos.z), -218., false);
+        // }
 
         // PilotItemId = _msm.ItemCreate(SceneId, wstring(ModelName), wstring("Skins\\Models\\CharacterPilot\\StadiumFemale.zip"), SkinUrl);
         PilotItemId = _msm.ItemCreate(SceneId, wstring("CharacterPilot"), wstring("Skins\\Models\\" + charModel), "");
@@ -110,6 +113,13 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
     // print("Position: " + Vec3Str(Position));
     // print("ItemId: " + ItemId.GetName());
     // print("SceneId: " + SceneId.GetName());
+
+    // replace x,z coords of vector
+    if (ItemId.Value == CarItemId.Value && Position.x == initCarPos.x) {
+        Position.x += xShift;
+        _msm.ItemSetLocation(SceneId, ItemId, Position, AngleDeg, IsTurntable);
+        return false;
+    }
     return true;
 }
 
