@@ -269,6 +269,24 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
     return ret;
 }
 
+bool _ItemAttachTo(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
+
+    // TODO: get args from stack
+    MwId ItemId = stack.CurrentId(0);
+    MwId ParentItemId = stack.CurrentId(1);
+    MwId SceneId = stack.CurrentId(2);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnItemAttachTo(msm, SceneId, ItemId, ParentItemId);
+    }
+
+    l.Unlock();
+    return ret;
+}
+
 // ItemSetVehicleState(MwId SceneId, MwId ItemId, float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke)
 bool _ItemSetVehicleState(CMwStack &in stack, CMwNod@ nod) {
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
