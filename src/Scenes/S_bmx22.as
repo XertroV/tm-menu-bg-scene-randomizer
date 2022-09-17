@@ -30,7 +30,13 @@ class S_bmx22 : Scene {
 
     void Update(float dt) override {
         t += dt/1000.0;
+        InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+        if (l is null) {
+            warn('failed intercept lock on Update');
+            return;
+        }
         RunSceneUpdate();
+        l.Unlock();
     }
 
     bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
@@ -69,6 +75,7 @@ class S_bmx22 : Scene {
 
     bool OnLightDir0Set(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 sRGB, float Intensity) override {
         if (!IsHomePage()) return true;
+        print('LightDir0Set intercepted.');
         // msm.LightDir0Set(SceneId, sRGB, 1.5); // Day time lighting
         msm.LightDir0Set(SceneId, sRGB, 0.5); // Night time lighting
         return false;
@@ -96,15 +103,15 @@ class S_bmx22 : Scene {
         }
         f_initialized = true;
 
-        auto uiLayer = GetCurrentUILayer();
-        auto camVehicle = cast<CGameManialinkCamera>(uiLayer.LocalPage.GetFirstChild("camera-vehicle"));
-        string[] daToTry = {"halign", "CameraHAngle", "HAlign", "HorizontalAlign", "offsetpos", "OffsetPos", "OffsetRot", "offsetrot", "rot", "rotation", "Rotation", "AngleDeg", "angledeg", "deg"};
-        if (camVehicle !is null) {
-            for (uint i = 0; i < daToTry.Length; i++) {
-                auto da = daToTry[i];
-                print("DataAttributeExists(" + da + "): " + (camVehicle.DataAttributeExists(da) ? "y" : "n"));
-            }
-        }
+        // auto uiLayer = GetCurrentUILayer();
+        // auto camVehicle = cast<CGameManialinkCamera>(uiLayer.LocalPage.GetFirstChild("camera-vehicle"));
+        // string[] daToTry = {"halign", "CameraHAngle", "HAlign", "HorizontalAlign", "offsetpos", "OffsetPos", "OffsetRot", "offsetrot", "rot", "rotation", "Rotation", "AngleDeg", "angledeg", "deg"};
+        // if (camVehicle !is null) {
+        //     for (uint i = 0; i < daToTry.Length; i++) {
+        //         auto da = daToTry[i];
+        //         print("DataAttributeExists(" + da + "): " + (camVehicle.DataAttributeExists(da) ? "y" : "n"));
+        //     }
+        // }
 
         @this.msm = msm;
         this.SceneId = SceneId;
@@ -153,7 +160,10 @@ class S_bmx22 : Scene {
         msm.CameraSetLocation1(SceneId, newPos, newAngle, newFov);
         // Setting_BgReflectionAngle = newAngle;
         // msm.CameraSetFromItem(SceneId, PilotItemId1);
-        msm.LightDir0Set(SceneId, vec3(.75, .75, .75), 0.5); // Night time lighting
+        // night: intensity 0.5
+        // day: intensity 1.5
+        print('LightDir0Set called. ' + (Math::Sin(t)*.5 + 1));
+        msm.LightDir0Set(SceneId, vec3(.75, .75, .75), Math::Sin(t) + 1); //  Math::Sin(t)*.5 + 1 -> between 0.5 and 1.5
 
         auto l = GetCurrentUILayer();
         auto labelNews = cast<CGameManialinkLabel>(l.LocalPage.GetFirstChild("label-news"));
