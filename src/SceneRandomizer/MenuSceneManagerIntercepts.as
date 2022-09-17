@@ -7,6 +7,19 @@ void ResetCurrentScene() {
     @CurrentScene = S_FromJson();
 }
 
+void CoroStartMe_InitCurrentScene() {
+    bool lastSceneNull = true;
+    while (true) {
+        yield();
+
+        if (lastSceneNull && CurrentScene !is null) {
+            CurrentScene.StartMainLoop();
+        }
+
+        lastSceneNull = CurrentScene is null;
+    }
+}
+
 void Update(float dt) {
     if (CurrentScene !is null)
         CurrentScene.Update(dt);

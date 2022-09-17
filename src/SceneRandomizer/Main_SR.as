@@ -15,4 +15,5 @@ void SetUpSceneRandomizerIntercepts() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemAttachTo", _ItemAttachTo);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetVehicleState", _ItemSetVehicleState);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetPlayerState", _ItemSetPlayerState);
+    startnew(CoroStartMe_InitCurrentScene);
 }

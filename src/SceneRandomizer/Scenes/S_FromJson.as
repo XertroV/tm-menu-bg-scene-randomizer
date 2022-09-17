@@ -1,4 +1,4 @@
-class S_FromJson : Scene {
+    class S_FromJson : Scene {
     // config
     Json::Value@ JsonConfig;
     array<SceneItem@> SceneEntries;
@@ -34,8 +34,6 @@ class S_FromJson : Scene {
         } catch {
             NotifyFailure("Failed to parse JSON scene config.");
         }
-
-        startnew(CoroutineFunc(MainLoop));
     }
 
     void NotifyFailure(const string &in msg) {
@@ -84,7 +82,7 @@ class S_FromJson : Scene {
             HasCarId = true;
             // testing
             print("CarItemId: " + CarItemId.Value);
-            msm.ItemDestroy(SceneId, CarItemId);
+            // msm.ItemDestroy(SceneId, CarItemId);
             // auto newCar = CreateCarItem();
             // print("newCarId: " + newCar.Value);
         }

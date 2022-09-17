@@ -22,8 +22,21 @@ state:
 */
 
 class Scene {
+    private bool f_startedMainLoop = false;
+    // plugin functionality
     void RenderSceneSettings() {}
     void Update(float dt) {}
+    /* overwrite MainLopp if you need to monitor state and react to stuff but
+      can't do that from intercept code. */
+    void MainLoop() {}
+    // ! *NEVER* call StartMainLoop from intercept code
+    void StartMainLoop() final {
+        if (!f_startedMainLoop) {
+            startnew(CoroutineFunc(MainLoop));
+            f_startedMainLoop = true;
+        }
+    }
+    // events from intercepts
     bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) {return true;}
     bool OnSceneDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId) {return true;}
     bool OnCameraSetLocation0(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg) {return true;}
