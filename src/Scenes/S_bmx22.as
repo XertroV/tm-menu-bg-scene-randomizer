@@ -162,7 +162,7 @@ class S_bmx22 : Scene {
         // msm.CameraSetFromItem(SceneId, PilotItemId1);
         // night: intensity 0.5
         // day: intensity 1.5
-        print('LightDir0Set called. ' + (Math::Sin(t)*.5 + 1));
+        print('LightDir0Set called. ' + (Math::Sin(t) + 1));
         msm.LightDir0Set(SceneId, vec3(.75, .75, .75), Math::Sin(t) + 1); //  Math::Sin(t)*.5 + 1 -> between 0.5 and 1.5
 
         auto l = GetCurrentUILayer();
