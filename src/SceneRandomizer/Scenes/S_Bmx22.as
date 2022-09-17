@@ -1,4 +1,4 @@
-class S_Bmx22 : Scene {
+class S_bmx22 : Scene {
     string CurrPage;
 
     CGameMenuSceneScriptManager@ msm;
@@ -21,9 +21,9 @@ class S_Bmx22 : Scene {
 
     PilotModel s_PM = PilotModel::FemaleBlack;
 
-    S_Bmx22() {
+    S_bmx22() {
         s_PM = RandomPilotModel();
-        // print('S_Bmx22.s_PM = ' + s_PM);
+        // print('S_bmx22.s_PM = ' + s_PM);
     }
 
     void RenderSceneSettings() override {}
@@ -110,7 +110,7 @@ class S_Bmx22 : Scene {
         print(PilotModelSkin(s_PM));
         // RpgLandscapeId = msm.ItemCreate(SceneId, "CharacterPilot", PilotModelSkin(s_PM), "");
         PilotItemId1 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\NewPilotBlue2.zip", "");
-        CarItemId1 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium_AUS.zip", "");
+        CarItemId1 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium.zip", "");
         CarItemId2 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium_FRA.zip", "");
         CarItemId3 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium_FRA.zip", "");
         // CarItemId3 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\ToyotaGT-86-Gazoo-Racing.zip", "");
