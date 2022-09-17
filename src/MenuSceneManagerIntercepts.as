@@ -45,6 +45,8 @@ bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
     print('SceneCreate called for layout: ' + string(layout));
     if (CurrentScene !is null)
         ret = CurrentScene.OnSceneCreate(msm, layout);
+    else
+        warn('SceneCreate hook skipped because CurrentScene is null!');
     l.Unlock();
     return ret;
 }
