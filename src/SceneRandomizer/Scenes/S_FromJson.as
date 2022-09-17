@@ -30,7 +30,7 @@
 
     S_FromJson(const string &in jsonStr = "{}") {
         try {
-            JsonConfig = Json::Parse(jsonStr);
+            @JsonConfig = Json::Parse(jsonStr);
         } catch {
             NotifyFailure("Failed to parse JSON scene config.");
         }
@@ -82,9 +82,9 @@
             HasCarId = true;
             // testing
             print("CarItemId: " + CarItemId.Value);
-            // msm.ItemDestroy(SceneId, CarItemId);
-            // auto newCar = CreateCarItem();
-            // print("newCarId: " + newCar.Value);
+            msm.ItemDestroy(SceneId, CarItemId);
+            auto newCar = CreateCarItem();
+            print("newCarId: " + newCar.Value);
         }
         // if we get a set location on the car, we want to pass this through to all cars that are syncd
         if (HasCarId && ItemId.Value == CarItemId.Value) {
@@ -118,7 +118,7 @@
 
 
 
-    void MainLoop() {
+    void MainLoop() override {
         while (true) {
             yield();
         }
