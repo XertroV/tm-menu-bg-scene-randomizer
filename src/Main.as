@@ -1,5 +1,7 @@
 /* Notes: */
 
+SceneRandomizer@ g_SceneRand = SceneRandomizer();
+
 void Main() {
     // we do stuff through coros so settings have a chance to load
     startnew(SetUpReflsIntercept);
@@ -30,7 +32,8 @@ bool _PlaneReflectEnable1(CMwStack &in stack, CMwNod@ nod) {
         trace('_PlaneReflectEnable1 -- "fixing" parameters');
         AllowPlaneReflectEnableCall = true;
         @LastMenuSceneMgr = cast<CGameMenuSceneScriptManager>(nod);
-        LastMenuSceneMgr.PlaneReflectEnable1(sceneId, Setting_BgReflectionOpacity, q1, q2, q3, q4, Setting_BgReflectionAngle);
+        // LastMenuSceneMgr.PlaneReflectEnable1(sceneId, Setting_BgReflectionOpacity, q1, q2, q3, q4, Setting_BgReflectionAngle);
+        LastMenuSceneMgr.PlaneReflectEnable1(sceneId, Setting_BgReflectionOpacity, null, null, null, null, Setting_BgReflectionAngle);
         return false;
     }
 }
@@ -62,7 +65,8 @@ void UpdateAllBgReflections() {
                 quads.InsertLast(quad);
             }
             if (quads.Length == 4) {
-                MenuSceneMgr_PlaneReflectEnable(LastBgSceneId, Setting_BgReflectionOpacity, quads[3], quads[1], quads[0], quads[2], Setting_BgReflectionAngle);
+                // MenuSceneMgr_PlaneReflectEnable(LastBgSceneId, Setting_BgReflectionOpacity, quads[3], quads[1], quads[0], quads[2], Setting_BgReflectionAngle);
+                MenuSceneMgr_PlaneReflectEnable(LastBgSceneId, Setting_BgReflectionOpacity, null, null, null, null, Setting_BgReflectionAngle);
             }
         }
     }
@@ -77,6 +81,8 @@ void SetUpReflsIntercept() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneCreate", _SceneCreate);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemCreate", _ItemCreate);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetLocation", _ItemSetLocation);
+    Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneDestroy", _SceneDestroy);
+    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetVehicleState", _ItemSetVehicleState);
 
     // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Assign_AutoPilot", _Vehicle_Assign_AutoPilot);
     // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Create", _Vehicle_Create);
