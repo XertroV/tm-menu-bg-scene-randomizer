@@ -12,10 +12,11 @@
     // track state of menu to do init of scene, etc.
     bool HasCarId = false;
     bool ExpectCarIdNext = false;
+    vec3 MM_CarPos;
 
     // state of scene for reference and cleanup
     MwId[] LocalItems;
-    uint[] ItemsSyncdToCar;
+    MwId[] ItemsSyncdToCar;
 
     /*
 
@@ -80,11 +81,12 @@
         if (!HasCarId && ExpectCarIdNext) {
             CarItemId = ItemId;
             HasCarId = true;
-            // testing
+            /* testing: are item IDs reused? yes.
             print("CarItemId: " + CarItemId.Value);
             msm.ItemDestroy(SceneId, CarItemId);
             auto newCar = CreateCarItem();
             print("newCarId: " + newCar.Value);
+            */
         }
         // if we get a set location on the car, we want to pass this through to all cars that are syncd
         if (HasCarId && ItemId.Value == CarItemId.Value) {
@@ -137,11 +139,25 @@
 
     MwId CreateCarItem(const string &in SkinName = "Stadium_AUS", const string &in SkinUrl = "") {
         string sfx = SkinName.EndsWith(".zip") ? "" : ".zip";
-        return MenuSceneMgr.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\" + SkinName + sfx, SkinUrl);
+        auto newId = MenuSceneMgr.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\" + SkinName + sfx, SkinUrl);
+        LocalItems.InsertLast(newId);
+        ItemsSyncdToCar.InsertLast(newId);
+        return newId;
     }
 
 }
 
-class SceneItem {
+enum SItemType
+    { CarSport
+    , CharacterPilot
+    }
 
+class SceneItem {
+    SceneItem() {
+
+    }
+}
+
+class SItemProps {
+    SItemProps() {}
 }
