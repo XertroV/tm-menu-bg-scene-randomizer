@@ -9,11 +9,6 @@ namespace GI {
         }
     }
 
-
-    CTrackMania@ GetApp() {
-        return GetTmApp();
-    }
-
     CTrackManiaNetwork@ GetNetwork() {
         return cast<CTrackManiaNetwork>(app.Network);
     }

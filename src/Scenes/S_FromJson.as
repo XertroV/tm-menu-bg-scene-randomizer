@@ -16,7 +16,12 @@
 
     // state of scene for reference and cleanup
     MwId[] LocalItems;
-    MwId[] ItemsSyncdToCar;
+    array<SyncdItem@> SyncdCars;
+    // uint[] ItemIxsSyncdToMMCar;
+    // vec3[] InitCarPositionsBySIx; // SIx == 'syncd inxex' via ItemIxsSyncdToMMCar (indexes of this array and that one correspond to the same local item)
+
+
+
 
     /*
 
@@ -81,10 +86,11 @@
         if (!HasCarId && ExpectCarIdNext) {
             CarItemId = ItemId;
             HasCarId = true;
-            /* testing: are item IDs reused? yes.
+            msm.ItemDestroy(SceneId, CarItemId);
+            auto newCar = CreateCarItem(); // IDs are re-used
+            /* testing: are item IDs reused? yes. both have an id of `0` here.
             print("CarItemId: " + CarItemId.Value);
             msm.ItemDestroy(SceneId, CarItemId);
-            auto newCar = CreateCarItem();
             print("newCarId: " + newCar.Value);
             */
         }
@@ -108,6 +114,8 @@
 
     void OnMenuScriptSetCarLocation(vec3 Position, float AngleDeg, bool IsTurntable) {
         // todo
+        // when we get a new location, we want to translate that to one or more in-scene items, but we need
+        // to account for the intial positions and rotations of those items.
     }
 
 
@@ -137,14 +145,62 @@
 
     */
 
-    MwId CreateCarItem(const string &in SkinName = "Stadium_AUS", const string &in SkinUrl = "") {
+    MwId CreateCarItem(const string &in SkinName = "Stadium_AUS", const string &in SkinUrl = "", SyncdItem@ reference = null) {
         string sfx = SkinName.EndsWith(".zip") ? "" : ".zip";
         auto newId = MenuSceneMgr.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\" + SkinName + sfx, SkinUrl);
         LocalItems.InsertLast(newId);
-        ItemsSyncdToCar.InsertLast(newId);
+        // if (reference !is null)
+        //     SyncdCars.InsertLast(); // LocalItems.Length will always be >= 0 b/c we just appended to it
         return newId;
     }
 
+}
+
+/*
+goal: enable easy access to new positions/angles for cars in the scene.
+time delay is a 'todo' feature.
+*/
+class SyncdItem {
+    MwId itemId;
+    vec3 pos; // in 'world-space'
+    vec3 refPos; // in 'world-space'
+    float angle; // in 'world-space'
+    float refAngle; // in 'world-space'
+
+    SyncdItem(MwId _itemId, vec3 _refPos, float _refAngle) { // we could add turn table too but is basically overhead -- can be an item setting if we care
+        MwId itemId = _itemId;
+        vec3 refPos = _refPos; // the reference position (initial MM car loc)
+        float refAngle = _refAngle; // reference angle (initial MM car angle)
+    }
+
+    SyncdItem@ MkRefernce(MwId _itemId, vec3 _refPos, float _refAngle) const {
+        auto ret = SyncdItem(_itemId, _refPos, _refAngle);
+        ret.SetPosition(_refPos);
+        ret.SetAngle(_refAngle);
+        return ret;
+    }
+
+    SyncdItem@ FromReference(MwId _itemId, SyncdItem@ reference) const {
+        return SyncdItem(_itemId, reference.refPos, reference.refAngle);
+    }
+
+    SyncdItem@ MkDuplicate() {
+        return SyncdItem(itemId, refPos, refAngle);
+    }
+
+
+    void SetPosition(vec3 newPos) {
+        pos = newPos;
+    }
+
+    void SetAngle(float newAngle) {
+        angle = newAngle;
+    }
+
+    vec3 NextPosition(vec3 nextRefPos) { // can be optimized, but this version is clear
+        auto posDelta = (nextRefPos - refPos) + (refPos - pos);
+        return posDelta + pos;
+    }
 }
 
 enum SItemType
