@@ -96,7 +96,8 @@ bool _CameraSetLocation1(CMwStack &in stack, CMwNod@ nod) {
     @msm = cast<CGameMenuSceneScriptManager>(nod);
     if (CurrentScene !is null) {
         ret = CurrentScene.OnCameraSetLocation1(msm, SceneId, Position, AngleDeg, FovY_Deg);
-    }
+    } else
+        warn('_CameraSetLocation1 hook skipped because CurrentScene is null!');
 
     l.Unlock();
     return ret;
@@ -265,7 +266,8 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
     MwId SceneId = stack.CurrentId(4);
     if (CurrentScene !is null) {
         ret = CurrentScene.OnItemSetLocation(_msm, SceneId, ItemId, Position, AngleDeg, IsTurntable);
-    }
+    } else
+        warn('_ItemSetLocation hook skipped because CurrentScene is null!');
 
     l.Unlock();
     return ret;
