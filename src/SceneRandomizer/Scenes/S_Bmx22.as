@@ -33,7 +33,7 @@ class S_bmx22 : Scene {
         RunSceneUpdate();
     }
 
-    bool OnCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
+    bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
         CurrPage = GetCurrentPage();
         return true;
     }
@@ -74,6 +74,8 @@ class S_bmx22 : Scene {
         return false;
     }
 
+
+
     bool OnSceneDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId) override {
         if (!IsHomePage()) return true;
         msm.ItemDestroy(SceneId, CarItemId1);
@@ -104,7 +106,6 @@ class S_bmx22 : Scene {
             }
         }
 
-
         @this.msm = msm;
         this.SceneId = SceneId;
         print(PilotModelSkin(s_PM));
@@ -118,7 +119,8 @@ class S_bmx22 : Scene {
         BuildingsId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\TMTurbo_Buildings.zip", "");
         CustomItemId3 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RiggedCharacterPilot.zip", "");
         CustomItemId4 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RiggedCharacterPilot2.zip", "");
-        CustomItemId5 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RotatingLights.zip", "");
+        CustomItemId5 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\NewPilotGold.zip", "");
+        // CustomItemId5 = msm.ItemCreate(SceneId, "Ornament", "Skins\\Models\\Item\\GPSRight.Item.Gbx", "");
 
         // CarItemId1 = msm.ItemCreate(SceneId, "CarSport", "", "");
         // bool tt = Math::Rand(0, 2) == 0;
@@ -136,7 +138,7 @@ class S_bmx22 : Scene {
         msm.ItemSetLocation(SceneId, BuildingsId, vec3(500, -50, 500), 180, false);
         msm.ItemSetLocation(SceneId, CustomItemId3, vec3(-.66, 0.075, 5), 200, false);
         msm.ItemSetLocation(SceneId, CustomItemId4, vec3(1.65, -0.03, 5.5), 90, false);
-        msm.ItemSetLocation(SceneId, CustomItemId5, vec3(3.5, 1, 5), 0, true);
+        msm.ItemSetLocation(SceneId, CustomItemId5, vec3(3.5, 1, 1), 0, true);
     }
 
     void RunSceneUpdate() {

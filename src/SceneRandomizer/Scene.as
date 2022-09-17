@@ -24,13 +24,22 @@ state:
 class Scene {
     void RenderSceneSettings() {}
     void Update(float dt) {}
-    bool OnCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) {return true;}
+    bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) {return true;}
+    bool OnSceneDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId) {return true;}
+    bool OnCameraSetLocation0(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg) {return true;}
+    bool OnCameraSetLocation1(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg, float FovY_Deg) {return true;}
+    bool OnCameraSetFromItem(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId) {return true;}
+    bool OnLightDir0Set(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 sRGB, float Intensity) {return true;}
+    bool OnItemCreate0(CGameMenuSceneScriptManager@ msm, MwId SceneId, const string &in ModelName, const string &in SkinNameOrUrl) {return true;}
     bool OnItemCreate(CGameMenuSceneScriptManager@ msm, MwId SceneId, const string &in ModelName, const string &in SkinName, const string &in SkinUrl) {return true;}
+    bool OnItemDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId) {return true;}
     bool OnItemSetLocation(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, vec3 Position, float AngleDeg, bool IsTurntable) {return true;}
+    bool OnItemAttachTo(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, MwId ParentItemId) {return true;}
     bool OnItemSetPlayerState(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, vec3 LightrailColor, vec3 DossardColor, const string &in DossardNumber, const string &in DossardTrigram) {return true;}
     bool OnItemSetVehicleState(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke) {return true;}
-    bool OnLightDir0Set(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 sRGB, float Intensity) {return true;}
-    bool OnSceneDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId) {return true;}
+    // skip PlaneReflectEnable -- menu-bg-refls
+    // skip PlaneReflectRefresh
+    // skip CubeMapSetImage2ds -- does it really matter atm?
 }
 
 vec3 InitCameraLoc = vec3(0., 1., -8.5);

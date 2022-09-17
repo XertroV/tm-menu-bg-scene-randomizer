@@ -6,6 +6,7 @@ class S_CharModel : Scene {
     MwId SceneId;
     MwId CarItemId;
     MwId PilotItemId;
+    MwId Pilot2ItemId;
 
     bool f_initialized = false;
     bool f_awaitingCarId = false;
@@ -27,7 +28,7 @@ class S_CharModel : Scene {
         RunSceneUpdate();
     }
 
-    bool OnCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
+    bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
         CurrPage = GetCurrentPage();
         return true;
     }

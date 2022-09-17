@@ -1,10 +1,10 @@
 CGameMenuSceneScriptManager@ msm;
 Scene@ CurrentScene;
 
-
 void ResetCurrentScene() {
     // @CurrentScene = S_CharModel();
-    @CurrentScene = S_Bmx22();
+    // @CurrentScene = S_bmx22();
+    @CurrentScene = S_FromJson();
 }
 
 void Update(float dt) {
@@ -12,15 +12,14 @@ void Update(float dt) {
         CurrentScene.Update(dt);
 }
 
-
-ReentrancyLocker@ Safety = ReentrancyLocker();
-/* usage:
+/* ReentrancyLocker usage:
     auto lockObj = Lock("SomeId"); // get lock; define this instance locally, don't keep it around
     if (lockObj is null) return true; // check not null
     bool ret = OnInteceptedX(...); // main logic
     lockObj.Unlock(); // optional, will call this via destuctor so GC is mb okay
     return ret;
 */
+ReentrancyLocker@ Safety = ReentrancyLocker();
 
 
 bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
@@ -32,7 +31,7 @@ bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
     @msm = cast<CGameMenuSceneScriptManager>(nod);
     print('SceneCreate called for layout: ' + string(layout));
     if (CurrentScene !is null)
-        ret = CurrentScene.OnCreate(msm, layout);
+        ret = CurrentScene.OnSceneCreate(msm, layout);
     l.Unlock();
     return ret;
 }
@@ -47,6 +46,57 @@ bool _SceneDestroy(CMwStack &in stack, CMwNod@ nod) {
     if (CurrentScene !is null) {
         ret = CurrentScene.OnSceneDestroy(msm, SceneId);
         @CurrentScene = null;
+    }
+
+    l.Unlock();
+    return ret;
+}
+
+bool _CameraSetLocation0(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
+
+    float AngleDeg = stack.CurrentFloat(0);
+    vec3 Position = stack.CurrentVec3(1);
+    MwId SceneId = stack.CurrentId(2);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnCameraSetLocation0(msm, SceneId, Position, AngleDeg);
+    }
+
+    l.Unlock();
+    return ret;
+}
+
+bool _CameraSetLocation1(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
+
+    float FovY_Deg = stack.CurrentFloat();
+    float AngleDeg = stack.CurrentFloat(1);
+    vec3 Position = stack.CurrentVec3(2);
+    MwId SceneId = stack.CurrentId(3);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnCameraSetLocation1(msm, SceneId, Position, AngleDeg, FovY_Deg);
+    }
+
+    l.Unlock();
+    return ret;
+}
+
+bool _CameraSetFromItem(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
+
+    MwId ItemId = stack.CurrentId(0);
+    MwId SceneId = stack.CurrentId(1);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnCameraSetFromItem(msm, SceneId, ItemId);
     }
 
     l.Unlock();
@@ -70,23 +120,26 @@ bool _LightDir0Set(CMwStack &in stack, CMwNod@ nod) {
     return ret;
 }
 
-MwId SceneId;
-MwId CarItemId;
-MwId PilotItemId;
-MwId Pilot2ItemId;
-MwId Pilot3ItemId;
-CGameMenuSceneScriptManager@ MsmFromItemCreate;
-
-bool allowCarSportItem = false;
-bool lastCreateWasCar = false;
-
 // for modifying car position but letting the menu animations run, still
 vec3 initCarPos = vec3(-1.8, 0.0, -.5);
 float xShift = .75;
 
-/*
+bool _ItemCreate0(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
 
-*/
+    string SkinNameOrUrl = string(stack.CurrentWString(0));
+    string ModelName = string(stack.CurrentWString(1));
+    MwId SceneId = stack.CurrentId(2);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnItemCreate0(msm, SceneId, ModelName, SkinNameOrUrl);
+    }
+
+    l.Unlock();
+    return ret;
+}
 
 // MwId SceneId, wstring ModelName, wstring SkinName, string SkinUrl
 bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
@@ -95,18 +148,29 @@ bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
     bool ret = true;
 
     auto _msm = cast<CGameMenuSceneScriptManager>(nod);
-    @MsmFromItemCreate = _msm;
     string SkinUrl = stack.CurrentString(0);
     string SkinName = string(stack.CurrentWString(1));
     string ModelName = string(stack.CurrentWString(2));
-    SceneId = stack.CurrentId(3);
-    // print("SkinUrl: " + SkinUrl);
-    // print("SkinName: " + SkinName);
-    // print("ModelName: " + ModelName);
-    // print("SceneId: " + SceneId.GetName());
-
+    MwId SceneId = stack.CurrentId(3);
     if (CurrentScene !is null)
         ret = CurrentScene.OnItemCreate(_msm, SceneId, ModelName, SkinName, SkinUrl);
+
+    l.Unlock();
+    return ret;
+}
+
+bool _ItemDestroy(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
+
+    // TODO: get args from stack
+    MwId ItemId = stack.CurrentId(0);
+    MwId SceneId = stack.CurrentId(1);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnItemDestroy(msm, SceneId, ItemId);
+    }
 
     l.Unlock();
     return ret;
@@ -171,27 +235,6 @@ bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
     return true;
 */
 
-bool runAnimCoro = false;
-
-// void SetPilot2() {
-//     MsmFromItemCreate.CameraSetFromItem(SceneId, Pilot2ItemId);
-// }
-
-void SetPilotLocCoro() {
-    while (true) {
-        yield();
-        if (runAnimCoro) {
-            auto t = float(Time::Now) / 3000.;
-            float xPos = -1.4 + (-1) * (Math::Sin(t) * .5 + .5);
-            trace('xPos: ' + xPos);
-            msm.ItemSetLocation(SceneId, PilotItemId, vec3(xPos, -.75, -.5), 130., false);
-        }
-    }
-}
-
-
-bool _Rentrancy_ISL_Lock = false;
-
 // ItemSetLocation(MwId SceneId, MwId ItemId, vec3 Position, float AngleDeg, bool IsTurntable)
 bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
@@ -211,22 +254,20 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
 
     l.Unlock();
     return ret;
+}
 
-    if (lastCreateWasCar) {
-        CarItemId = ItemId;
-        print("CarItemId: " + ItemId.Value);
-    }
-    // print("IsTurntable: " + (IsTurntable ? 't' : 'f'));
-    // print("AngleDeg: " + AngleDeg);
-    // print("Position: " + Vec3Str(Position));
-    // print("ItemId: " + ItemId.GetName());
-    // print("SceneId: " + SceneId.GetName());
+bool _ItemAttachTo(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
 
-    // replace x,z coords of vector
-    if (ItemId.Value == CarItemId.Value && Position.x == initCarPos.x) {
-        Position.x += xShift;
-        _msm.ItemSetLocation(SceneId, ItemId, Position, AngleDeg, IsTurntable);
-        ret = false;
+    // TODO: get args from stack
+    MwId ItemId = stack.CurrentId(0);
+    MwId ParentItemId = stack.CurrentId(1);
+    MwId SceneId = stack.CurrentId(2);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnItemAttachTo(msm, SceneId, ItemId, ParentItemId);
     }
 
     l.Unlock();
@@ -261,32 +302,22 @@ string Vec3Str(vec3 v) {
     return "(" + v.x + ", " + v.y + ", " + v.z + ")";
 }
 
+bool _ItemSetPlayerState(CMwStack &in stack, CMwNod@ nod) {
+    InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+    if (l is null) return true;
+    bool ret = true;
 
+    string DossardTrigram = stack.CurrentString();
+    string DossardNumber = stack.CurrentString(1);
+    vec3 DossardColor = stack.CurrentVec3(2);
+    vec3 LightrailColor = stack.CurrentVec3(3);
+    MwId ItemId = stack.CurrentId(4);
+    MwId SceneId = stack.CurrentId(5);
+    @msm = cast<CGameMenuSceneScriptManager>(nod);
+    if (CurrentScene !is null) {
+        ret = CurrentScene.OnItemSetPlayerState(msm, SceneId, ItemId, LightrailColor, DossardColor, DossardNumber, DossardTrigram);
+    }
 
-// CGameScriptMgrVehicle.Vehicle_Assign_AutoPilot
-// :: void Vehicle_Assign_AutoPilot(CGameScriptVehicle@ Vehicle, string ModelName)
-bool _Vehicle_Assign_AutoPilot(CMwStack &in stack, CMwNod@ nod) {
-    CGameScriptMgrVehicle@ smv = cast<CGameScriptMgrVehicle>(nod);
-    string ModelName = stack.CurrentString(0);
-    CGameScriptVehicle@ Vehicle = cast<CGameScriptVehicle>(stack.CurrentNod(1));
-    print("ModelName: " + ModelName);
-    print("Vehicle.IdName: " + Vehicle.IdName);
-    return true;
-}
-
-bool _Vehicle_Create(CMwStack &in stack, CMwNod@ nod) {
-    print("VEHICLE CREATE");
-    return true;
-}
-
-bool _Vehicle_CreateWithOwner(CMwStack &in stack, CMwNod@ nod) {
-    print("VEHICLE CREATE WITH OWNER");
-    return true;
-}
-
-
-
-bool _ActionLoad(CMwStack &in stack, CMwNod@ nod) {
-    print(">> ActionLoad");
-    return true;
+    l.Unlock();
+    return ret;
 }

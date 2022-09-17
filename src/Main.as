@@ -5,7 +5,6 @@ SceneRandomizer@ g_SceneRand = SceneRandomizer();
 void Main() {
     // we do stuff through coros so settings have a chance to load
     startnew(SetUpReflsIntercept);
-    startnew(SetPilotLocCoro);
 }
 
 // special variables used by _PlaneReflectEnable1
@@ -78,11 +77,7 @@ void OnSettingsChanged() {
 
 void SetUpReflsIntercept() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "PlaneReflectEnable1", _PlaneReflectEnable1);
-    Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneCreate", _SceneCreate);
-    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemCreate", _ItemCreate);
-    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetLocation", _ItemSetLocation);
-    Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneDestroy", _SceneDestroy);
-    Dev::InterceptProc("CGameMenuSceneScriptManager", "ItemSetVehicleState", _ItemSetVehicleState);
+    SetUpSceneRandomizerIntercepts();
 
     // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Assign_AutoPilot", _Vehicle_Assign_AutoPilot);
     // Dev::InterceptProc("CGameScriptMgrVehicle", "Vehicle_Create", _Vehicle_Create);

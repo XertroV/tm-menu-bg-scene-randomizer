@@ -1,25 +1,3 @@
-
-class InterceptLock {
-    ReentrancyLocker@ locker;
-    string id;
-    private bool unlocked = false;
-
-    InterceptLock(ReentrancyLocker@ _locker, const string &in _id) {
-        @locker = _locker;
-        id = _id;
-    }
-
-    ~InterceptLock() {
-        this.Unlock();
-    }
-
-    void Unlock() {
-        if (unlocked) return;
-        unlocked = true;
-        locker.Unlock(id);
-    }
-}
-
 /*
 ReentrancyLocker helps avoid reentrancy issues with intercepted calls.
 
@@ -49,5 +27,26 @@ class ReentrancyLocker {
         if (!lockedIds.Exists(id)) throw('Tried to unlock ID that was not locked: ' + id);
         lockedIds.Delete(id);
         // trace('Unlocked ID: ' + id);
+    }
+}
+
+class InterceptLock {
+    ReentrancyLocker@ locker;
+    string id;
+    private bool unlocked = false;
+
+    InterceptLock(ReentrancyLocker@ _locker, const string &in _id) {
+        @locker = _locker;
+        id = _id;
+    }
+
+    ~InterceptLock() {
+        this.Unlock();
+    }
+
+    void Unlock() {
+        if (unlocked) return;
+        unlocked = true;
+        locker.Unlock(id);
     }
 }

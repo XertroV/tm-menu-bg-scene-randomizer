@@ -29,7 +29,7 @@ class S_JustDriver : Scene {
         RunSceneUpdate();
     }
 
-    bool OnCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
+    bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
         CurrPage = GetCurrentPage();
         return true;
     }
