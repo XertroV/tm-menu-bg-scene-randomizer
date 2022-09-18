@@ -4,23 +4,33 @@ uint Setting_CameraSeed = 0;
 [Setting hidden]
 uint Setting_SceneSeed = 0;
 
-[SettingsTab name="Scene Settings"]
-void RenderSceneSettingsTab() {
+// [SettingsTab name="General"]
+// void RenderSceneSettingsTab() {
 
-}
+// }
 
 [SettingsTab name="Scene Customization"]
 void RenderSceneCustomizationTab() {
-    if (Setting_SceneSeed == 0) {
-        UI::Text("These settings are inactive when randomization is enabled.");
+    if (CurrentScene is null) {
+        UI::TextWrapped("You need to be at the main menu to alter settings.");
+        UI::TextWrapped("If you already are, go to another menu and back again to initialize the plugin.");
+        UI::TextWrapped("(Easiest method: click 'Settings' in the bottom-left and then 'Back'.)");
         return;
     }
+
+    CurrentScene.RenderSceneSettings();
+
+    // if (Setting_SceneSeed == 0) {
+    //     UI::Text("These settings are inactive when randomization is enabled.");
+    //     return;
+    // }
 }
 
-
+// todo: move this later
+void OnSettingsChanged(){}
 
 int nbElement = 0;
-SceneItem[] data = {};
+Values@[] data = {};
 
 class Values {
     string type = "CarSport";

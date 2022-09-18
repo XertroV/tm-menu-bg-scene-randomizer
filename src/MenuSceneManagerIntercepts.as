@@ -3,8 +3,8 @@ Scene@ CurrentScene;
 
 void ResetCurrentScene() {
     // @CurrentScene = S_CharModel();
-    @CurrentScene = S_bmx22();
-    // @CurrentScene = S_FromJson();
+    // @CurrentScene = S_bmx22();
+    @CurrentScene = S_FromJson();
 }
 
 void CoroStartMe_InitCurrentScene() {

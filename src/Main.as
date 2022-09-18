@@ -7,9 +7,12 @@ void Main() {
     startnew(SetUpSceneRandomizerIntercepts);
 }
 
-// void Render() {
-//     Wizard::Render();
-// }
+void Render() {
+    if (CurrentScene !is null)
+        CurrentScene.RenderUI();
+}
+
+
 void SetUpSceneRandomizerIntercepts() {
     Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneCreate", _SceneCreate);
     Dev::InterceptProc("CGameMenuSceneScriptManager", "SceneDestroy", _SceneDestroy);

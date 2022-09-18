@@ -25,6 +25,7 @@ class Scene {
     private bool f_startedMainLoop = false;
     // plugin functionality
     void RenderSceneSettings() {}
+    void RenderUI() {} // for drawing UI windows e.g., for S_FromJson's scene builder
     void Update(float dt) {}
     /* overwrite MainLopp if you need to monitor state and react to stuff but
       can't do that from intercept code. */
