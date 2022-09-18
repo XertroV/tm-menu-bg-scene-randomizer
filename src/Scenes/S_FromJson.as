@@ -371,7 +371,18 @@
 
         UI::NextColumn();
         ColHeading("Type");
-        ForEachItem(function(SceneItem@ item) { UI::AlignTextToFramePadding(); UI::Text(tostring(item.type)); });
+        ForEachItem(function(SceneItem@ item) {
+            UI::AlignTextToFramePadding();
+            if (UI::BeginCombo("##item-type-" + item.uid, tostring(item.type))) {
+                for (uint i = 0; i < AllItemTypes.Length; i++) {
+                    auto ty = AllItemTypes[i];
+                    if (UI::Selectable(tostring(ty), ty == item.type)) {
+                        item.type = ty;
+                    }
+                }
+                UI::EndCombo();
+            }
+        });
 
         UI::NextColumn();
         ColHeading("Selected");
@@ -475,6 +486,8 @@ void ErrorAndThrow(const string &in msg) {
     warn(msg);
     throw(msg);
 }
+
+const SItemType[] AllItemTypes = {SItemType::CarSport, SItemType::CharacterPilot};
 
 /*
 goal: enable easy access to new positions/angles for cars in the scene.
