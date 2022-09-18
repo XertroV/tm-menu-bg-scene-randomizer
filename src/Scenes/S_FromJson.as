@@ -229,11 +229,7 @@
         UI::SameLine();
         bool shouldLoadConfig = UI::Button("Load Scene Config", vec2(150, UI::GetFrameHeight()));
 
-        auto j = Json::Array();
-        for (uint i = 0; i < SceneItems.Length; i++) {
-
-        }
-
+        // todo: update saved config each time scene is altered + allow for changes to be made to the textbox
         // sorta manual formatting so it's kinda pretty printed.
         string _config = "";
         for (uint i = 0; i < SceneItems.Length; i++) {
@@ -308,8 +304,8 @@
         // xSpaceLeft -= bDims.x;
         if (isItemSelected) {
             UI::SameLine();
-            SceneBuilderAuxWindowVisible = SceneBuilderAuxWindowVisible
-                || MDisabledButton(!SceneBuilderAuxWindowVisible, "Show Item Properties", vec2(150, 30));
+            SceneBuilderAuxWindowVisible = MDisabledButton(SceneBuilderAuxWindowVisible, "Show Item Properties", vec2(150, 30))
+                || SceneBuilderAuxWindowVisible;
             xSpaceLeft -= 150 + xSep;
         }
         UI::SameLine();
@@ -445,11 +441,11 @@
     }
 
     void RenderAuxWindow() {
-        if (UI::Begin("Scene Builder Item Properties", SceneBuilderAuxWindowVisible, UI::WindowFlags::None)) {
-
-
-            UI::End();
+        if (UI::Begin("Scene Builder Item Properties", SceneBuilderAuxWindowVisible, UI::WindowFlags::NoCollapse | UI::WindowFlags::AlwaysAutoResize)) {
+            UI::Text("-------------------------------------------------------------------------------");
+            UI::TextWrapped("todo: add per-item UI here (position, etc)\n\n\n\n\n\n\n\n\n:YEP:");
         }
+        UI::End();
     }
 
     void ForEachItem(SceneItemFunc@ f) {
