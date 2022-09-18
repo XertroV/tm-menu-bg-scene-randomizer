@@ -203,17 +203,6 @@ class SyncdItem {
     }
 }
 
-enum SItemType
-    { CarSport
-    , CharacterPilot
-    }
-
-class SceneItem {
-    SceneItem() {
-
-    }
-}
-
 class SItemProps {
     SItemProps() {}
 }

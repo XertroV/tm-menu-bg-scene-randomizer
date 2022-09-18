@@ -1,8 +1,26 @@
 [Setting hidden]
 uint Setting_CameraSeed = 0;
+
+[Setting hidden]
 uint Setting_SceneSeed = 0;
+
+[SettingsTab name="Scene Settings"]
+void RenderSceneSettingsTab() {
+
+}
+
+[SettingsTab name="Scene Customization"]
+void RenderSceneCustomizationTab() {
+    if (Setting_SceneSeed == 0) {
+        UI::Text("These settings are inactive when randomization is enabled.");
+        return;
+    }
+}
+
+
+
 int nbElement = 0;
-array<Values> data = {};
+SceneItem[] data = {};
 
 class Values {
     string type = "CarSport";
@@ -46,23 +64,8 @@ void ApplyChanges(){
     dataJson = dataJson + "]";
 
     print(dataJson);
-    ResetCurrentScene(dataJson);
+    // ResetCurrentScene(dataJson);
 }
-
-[SettingsTab name="Scene Settings"]
-void RenderSceneSettingsTab() {
-
-}
-
-[SettingsTab name="Scene Customization"]
-void RenderSceneCustomizationTab() {
-    if (Setting_SceneSeed == 0) {
-        UI::Text("These settings are inactive when randomization is enabled.");
-        return;
-    }
-}
-
-void OnSettingsChanged(){}
 
 [SettingsTab name="Element customization"]
 void RenderPositionCustomization(){
