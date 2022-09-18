@@ -286,6 +286,8 @@
         return selectedUid == item.uid;
     }
 
+    // ui gets laggy (30ms frame times) around 36 entries for me
+
     void RenderSceneBuilder() {
         /* we start with a tool bar so do some calculations about dimensions and things.
         layout: [b1] [button]                          [b3] [b4] [b5] [b6]
@@ -329,6 +331,10 @@
 
         int nCols = 5;
 
+        // note: initially I went with a table b/c I know them,
+        // but I decided to go with columns after trying them out
+        // and with AlignTextToFramePadding worked as expected.
+        // the following table code is legacy.
         auto tFlags = UI::TableFlags::None
             | UI::TableFlags::Borders
             | UI::TableFlags::SizingStretchProp
@@ -419,18 +425,6 @@
 
             if (deleteThisItem)
                 RemoveItem(i, item);
-            // if (selectedUid == item.uid) {
-            //     UI::AlignTextToFramePadding();
-            //     UI::Text(Icons::Check);
-            //     UI::SameLine();
-            //     bool deselect = UI::Button(Icons::Ban);
-            //     AddSimpleTooltip("Deselect item.");
-            //     if (deselect) selectedUid = "";
-            // } else {
-            //     if (UI::Button("Select")) {
-            //         selectedUid = item.uid;
-            //     }
-            // }
         };
 
         UI::Columns(1);
