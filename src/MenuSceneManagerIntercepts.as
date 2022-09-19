@@ -1,10 +1,10 @@
 CGameMenuSceneScriptManager@ msm;
 Scene@ CurrentScene;
 
-void ResetCurrentScene() {
+void ResetCurrentScene(CGameMenuSceneScriptManager@ msm) {
     // @CurrentScene = S_CharModel();
     // @CurrentScene = S_bmx22();
-    @CurrentScene = S_FromJson();
+    @CurrentScene = S_FromJson(msm);
 }
 
 void CoroStartMe_InitCurrentScene() {
@@ -29,23 +29,14 @@ void Update(float dt) {
     }
 }
 
-/* ReentrancyLocker usage:
-    auto lockObj = Lock("SomeId"); // get lock; define this instance locally, don't keep it around
-    if (lockObj is null) return true; // check not null
-    bool ret = OnInteceptedX(...); // main logic
-    lockObj.Unlock(); // optional, will call this via destuctor so GC is mb okay
-    return ret;
-*/
-ReentrancyLocker@ Safety = ReentrancyLocker();
-
 
 bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
-    ResetCurrentScene();
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
     wstring layout = stack.CurrentWString();
     @msm = cast<CGameMenuSceneScriptManager>(nod);
+    ResetCurrentScene(msm);
     print('SceneCreate called for layout: ' + string(layout));
     if (CurrentScene !is null)
         ret = CurrentScene.OnSceneCreate(msm, layout);
@@ -190,6 +181,8 @@ bool _ItemDestroy(CMwStack &in stack, CMwNod@ nod) {
     @msm = cast<CGameMenuSceneScriptManager>(nod);
     if (CurrentScene !is null) {
         ret = CurrentScene.OnItemDestroy(msm, SceneId, ItemId);
+    } else {
+        ret = false;  // ItemDestroy can cause a crash in Page_HomePage if the plugin is reloaded, etc. There is GC for the scene in any case.
     }
 
     l.Unlock();

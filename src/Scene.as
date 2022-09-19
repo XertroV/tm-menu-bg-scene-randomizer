@@ -28,7 +28,7 @@ class Scene {
     void RenderUI() {} // for drawing UI windows e.g., for S_FromJson's scene builder
     void Update(float dt) {}
     /* overwrite MainLopp if you need to monitor state and react to stuff but
-      can't do that from intercept code. */
+      can't do that from intercept code. Don't modify the scene from MainLoop: use Update instead. */
     void MainLoop() {}
     // ! *NEVER* call StartMainLoop from intercept code
     void StartMainLoop() final {

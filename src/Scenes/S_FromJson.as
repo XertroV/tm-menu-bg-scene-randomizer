@@ -1,6 +1,9 @@
-    class S_FromJson : Scene {
+[Setting hidden]
+string Setting_Scene_FromJson_LastJsonConfig = "";
+
+class S_FromJson : Scene {
     // config
-    Json::Value@ JsonConfig;
+    private string _settingsTmpConfig = "{}";
     array<SceneItem@> SceneItems;
     dictionary@ ItemLookup = {}; // UID -> SceneItem
     dictionary@ ItemStates = {}; // UID -> SItemState
@@ -17,6 +20,10 @@
     bool HasCarId = false;
     bool ExpectCarIdNext = false;
     vec3 MM_CarPos;
+
+    // vec3 CameraLoc = vec3(InitCameraLoc);
+    // vec2 CameraAngleFov = vec2(InitCameraAngle, InitCameraFov);
+    SceneCamera@ Camera = SceneCamera();
 
     // state of scene for reference and cleanup
     // MwId[] LocalItems;
@@ -42,12 +49,43 @@
 
     */
 
-    S_FromJson(const string &in jsonStr = "{}") {
-        try {
-            @JsonConfig = Json::Parse(jsonStr);
-        } catch {
-            NotifyFailure("Failed to parse JSON scene config.");
+    S_FromJson(CGameMenuSceneScriptManager@ msm) {
+        @this.MenuSceneMgr = msm;
+        if (Setting_Scene_FromJson_LastJsonConfig.Length > 0) {
+            _settingsTmpConfig = Setting_Scene_FromJson_LastJsonConfig;
         }
+    }
+
+    void LoadJsonSceneConfig(const string &in config, bool canSleep = false) {
+        if (config.Length == 0) return;
+        auto jConfig = Json::Parse(config);
+        // Camera = SceneCamera(jConfig['camera']);
+        auto jItems = jConfig['items'];
+        if (jItems.GetType() != Json::Type::Array) {
+            NotifyFailure("config.items was not an array.");
+        } else {
+            // todo: load config
+            for (uint i = 0; i < jItems.Length; i++) {
+                LoadItem(SceneItem(jItems[i]));
+                if (canSleep) yield();
+            }
+        }
+    }
+
+    const string GenerateSceneConfig() {
+        // 1. camera, 2. items
+        string _config = '{ "camera": ' + Json::Write(Camera.ToJson());
+        _config += '\n, "items": ';
+        for (uint i = 0; i < SceneItems.Length; i++) {
+            auto item = SceneItems[i];
+            _config += (i > 0 ? "    , " : "\n    [ ") + Json::Write(item.ToJson()) + "\n";
+        }
+        _config += (SceneItems.Length > 0 ? "    ]" : "[]") + "\n";
+        _config += "}";
+        Setting_Scene_FromJson_LastJsonConfig = _config;
+        _settingsTmpConfig = _config;
+        trace('Generated new config:'); // + _settingsTmpConfig);
+        return _config;
     }
 
     void NotifyFailure(const string &in msg) {
@@ -60,11 +98,8 @@
     }
 
     void RenderUI() override {
-        InterceptLock@ l = Safety.Lock('MenuSceneMgr');
-        if (l is null) return;
         if (SceneBuilderAuxWindowVisible)
             RenderAuxWindow();
-        l.Unlock();
     }
 
     /*
@@ -78,11 +113,19 @@
 
     */
 
+    bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
+        @this.MenuSceneMgr = msm;
+        return true;
+    }
+
+    void _RunInitScene() {
+        // SceneId = MenuSceneMgr.SceneCreate(wstring("Empty"));
+    }
+
     /*
     - allow the car to be created and flag that we expect its ItemId to be used next.
     - block all other calls
     */
-
     bool OnItemCreate(CGameMenuSceneScriptManager@ msm, MwId SceneId, const string &in ModelName, const string &in SkinName, const string &in SkinUrl) override {
         if (!HasCarId) {
             ExpectCarIdNext = true;
@@ -103,7 +146,12 @@
             CarItemId = ItemId;
             HasCarId = true;
             msm.ItemDestroy(SceneId, CarItemId);
-            auto newCar = CreateCarItem(); // IDs are re-used
+            try {
+                LoadJsonSceneConfig(Setting_Scene_FromJson_LastJsonConfig);
+            } catch {
+                NotifyFailure("Failed to parse JSON scene config.");
+            }
+            // auto newCar = CreateCarItem(); // IDs are re-used
             /* testing: are item IDs reused? yes. both have an id of `0` here.
             print("CarItemId: " + CarItemId.Value);
             msm.ItemDestroy(SceneId, CarItemId);
@@ -117,6 +165,37 @@
         return false;
     }
 
+    bool OnItemSetVehicleState(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke) override {
+        if (ItemId.Value == CarItemId.Value) {
+            OnMenuScriptSetVehicleState(Steer, Brakes, FrontLight, TurboLvl, BoostLvl, BurnoutSmoke);
+        } else {
+            warn("Got OnItemSetVehicleState for unexpected item id: " + ItemId.Value);
+        }
+        return false;
+    }
+
+    bool HijackedScene = false;
+
+    bool OnCameraSetLocation1(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg, float FovY_Deg) override {
+        if (!HijackedScene) {
+            HijackedScene = true;
+            msm.SceneDestroy(SceneId);
+            auto nsid = msm.SceneCreate("Empty");
+            trace('NewSceneId: ' + nsid.Value);
+            return true;
+        }
+        return false;
+    }
+
+
+    bool OnCameraSetLocation0(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg) override {return false;}
+    bool OnCameraSetFromItem(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId) override {return false;}
+    bool OnLightDir0Set(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 sRGB, float Intensity) override {return false;}
+    bool OnItemCreate0(CGameMenuSceneScriptManager@ msm, MwId SceneId, const string &in ModelName, const string &in SkinNameOrUrl) override {return false;}
+    bool OnItemDestroy(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId) override {return false;}
+    bool OnItemAttachTo(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, MwId ParentItemId) override {return false;}
+    bool OnItemSetPlayerState(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, vec3 LightrailColor, vec3 DossardColor, const string &in DossardNumber, const string &in DossardTrigram) override {return false;}
+
     /*
 
     Scene logic and supporting functions
@@ -128,6 +207,10 @@
 
     */
 
+    void OnMenuScriptSetVehicleState(float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke) {
+
+    }
+
     void OnMenuScriptSetCarLocation(vec3 Position, float AngleDeg, bool IsTurntable) {
         // todo
         // when we get a new location, we want to translate that to one or more in-scene items, but we need
@@ -138,8 +221,7 @@
 
 
 
-    bool anyChanged = false;  // track if anything was changed by the user this loop -- need to know so we can update json
-
+    private bool anyChanged = false;  // track if anything was changed by the user this loop -- need to know so we can update json
     // avoid calling MenuSceneMgr stuff here -- it's for background stuff.
     // Scene updates should be done in Update();
     void MainLoop() override {
@@ -147,23 +229,35 @@
             yield();
             if (anyChanged) {
                 // todo
+                trace('change detected');
                 anyChanged = false;
+                GenerateSceneConfig();
             }
         }
     }
 
-    private float t = Time::Now;
-    void Update(float dt) {
+    private float t = Time::Now;  // global time
+    uint lastLog = uint(Time::Now / 1000);  // for rate limiting update calls
+    void Update(float dt) override {
         t += dt;
-        SetAllItemPositions();
+        if (uint(Math::Floor(t / 1000)) > lastLog) {
+            // trace('Update called; dt=' + dt);
+            lastLog++;
+        }
+        if (MenuSceneMgr !is null) {
+            MenuSceneMgr.CameraSetLocation1(SceneId, Camera.pos, Camera.angle, Camera.fov);
+            SetAllItemPositions();
+        }
     }
 
     void SetAllItemPositions() {
         for (uint i = 0; i < SceneItems.Length; i++) {
             auto item = SceneItems[i];
-            auto state = GetItemState(item);
-            MenuSceneMgr.ItemSetLocation(SceneId, state.ItemId, item.pos, item.angle, item.tt);
-            // trace("Set item " + state.ItemId.Value + " location to " + item.pos.ToString());
+            if (item.visible) {
+                auto state = GetItemState(item);
+                MenuSceneMgr.ItemSetLocation(SceneId, state.ItemId, item.pos, item.angle, item.tt);
+                // trace("Set item " + state.ItemId.Value + " location to " + item.pos.ToString());
+            }
         }
     }
 
@@ -187,21 +281,48 @@
         return newId;
     }
 
+    void ReloadScene() {
+        NotifyFailure("ReloadScene currently bugged. Better to go to a new menu and back.");
+        string config = GenerateSceneConfig();
+        RemoveAllItems();
+        MenuSceneMgr.SceneDestroy(SceneId);
+        SceneId = MenuSceneMgr.SceneCreate("Empty"); // "Stadium" breaks the game; "Default" sorta works but need to set up bg reflections and camera and things
+        trace('Reloaded Scene ID: ' + SceneId.Value);
+        LoadJsonSceneConfig(config);
+    }
+
     void LoadItem(SceneItem@ item) {
         // todo: other logic about creating the item in the scene, etc
+        bool firstItem = SceneItems.Length == 0;
         SceneItems.InsertLast(@item);
         ItemLookup[item.uid] = @item;
         AddToScene(item);
+        if (firstItem) selectedUid = item.uid;
         // todo: regen config
+        anyChanged = true;
     }
 
-    void RemoveItem(uint ix, SceneItem@ item) {
-        if (SceneItems[ix] != item) {
-            ErrorAndThrow('Tried to remove a scene item with a mismatching index');
+    void RemoveAllItems() {
+        while (SceneItems.Length > 0) {
+            RemoveItem(SceneItems[0]);
         }
-        RemoveFromScene(item);
+    }
+
+    void RemoveItem(SceneItem@ item) {
+        // if (SceneItems[ix] != item) {
+        //     ErrorAndThrow('Tried to remove a scene item with a mismatching index');
+        // }
+        if (item.visible)
+            RemoveFromScene(item);
         ItemLookup.Delete(item.uid);
-        SceneItems.RemoveAt(ix);
+        for (uint i = 0; i < SceneItems.Length; i++) {
+            auto _item = SceneItems[i];
+            if (item.uid == _item.uid) {
+                SceneItems.RemoveAt(i);
+                break;
+            }
+        }
+        // SceneItems.RemoveAt(ix);
     }
 
     void RemoveFromScene(SceneItem@ item) {
@@ -219,6 +340,7 @@
 
     void AddToScene(SceneItem@ item) {
         if (ItemStates.Exists(item.uid)) throw("Called AddToScene on an item that exists.");
+        if (!item.visible) throw("Called AddToScene on an non-visible item.");
         auto id = _AddToSceneRaw(item);
         ItemStates[item.uid] = @SItemState(SceneId, id);
     }
@@ -230,11 +352,7 @@
         bool isPilot = ty == SItemType::CharacterPilot;
         auto _skinDir = isPilot ? "HelmetPilot" : "CarSport";
         auto _skinZip = item.skinZip.Length > 0 ? item.skinZip : (isPilot ? "StadiumFemale.zip" : "Stadium_AUS.zip");
-
-
         auto id = MenuSceneMgr.ItemCreate(SceneId, tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, item.skinUrl);
-
-
         trace("_AddToSceneRaw: " + string::Join({tostring(SceneId.Value), tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, "=>", tostring(id.Value)}, ", "));
         return id;
     }
@@ -247,7 +365,7 @@
         MenuSceneMgr.ItemDestroy(SceneId, state.ItemId);
         // add new item to scene and update state
         state.ItemId = _AddToSceneRaw(item);
-        trace("Item Type Changed; oldId:" + oldId.Value + ", newId:" + state.ItemId.Value);
+        // trace("Item Type Changed; oldId:" + oldId.Value + ", newId:" + state.ItemId.Value);
     }
 
     SItemState@ GetItemState(SceneItem@ item) {
@@ -270,6 +388,7 @@
 
     void RenderSceneSettings() override {
         Heading("Scene Builder");
+        DrawSceneBuilderUtilButtons();
         UI::Separator();
         RenderSettingsJson();
 
@@ -277,6 +396,13 @@
         SubHeading("Scene Items");
         RenderSceneBuilder();
     }
+
+    void DrawSceneBuilderUtilButtons() {
+        // bool reloadScene = UI::Button(Icons::FloppyO + Icons::TrashO + Icons::Refresh);
+        // AddSimpleTooltip("Save the current scene and completely reload it.\n\\$888(Useful if the scene becomes glitched.)");
+        // if (reloadScene) ReloadScene();
+    }
+
 
     private uint lastCopy = 0;
 
@@ -287,41 +413,35 @@
         UI::SameLine();
         bool justCopied = (lastCopy + 2000) > Time::Now;
         bool copySceneConfig = MDisabledButton(justCopied, justCopied ? "Scene Config Copied!" : "Copy Scene Config", vec2(150, UI::GetFrameHeight()));
-        UI::SameLine();
-        UI::Dummy(vec2(30, 0));
-        UI::SameLine();
+        SameLineWithDummyX(30);
         bool shouldLoadConfig = UI::Button("Load Scene Config", vec2(150, UI::GetFrameHeight()));
         UI::Text("\\$f91Todo: cache json to avoid long frame times");
 
         // todo: update saved config each time scene is altered + allow for changes to be made to the textbox
         // sorta manual formatting so it's kinda pretty printed.
-        string _config = "";
-        for (uint i = 0; i < SceneItems.Length; i++) {
-            auto item = SceneItems[i];
-            _config += (i > 0 ? ", " : "[ ") + Json::Write(item.ToJson()) + "\n";
-        }
-        _config += (SceneItems.Length > 0 ? "" : "[") + "]";
+        // string _config = GenerateSceneConfig();
 
         // main text for config import/export
-        string config = UI::InputTextMultiline("##S_FromJson-json-spec", _config, vec2(Math::Min(600, UI::GetContentRegionAvail().x), 130), DisabledMultlineInputFlags());
+        _settingsTmpConfig = UI::InputTextMultiline("##S_FromJson-json-spec", _settingsTmpConfig, vec2(Math::Min(600, UI::GetContentRegionAvail().x), 130), DisabledMultlineInputFlags());
 
         if (copySceneConfig) {
-            IO::SetClipboard(config);
+            IO::SetClipboard(_settingsTmpConfig);
             lastCopy = Time::Now;
         }
 
         if (shouldLoadConfig) {
-            auto jConfig = Json::Parse(config);
-            auto jItems = jConfig['items'];
-            if (jItems.GetType() != Json::Type::Array) {
-                // handle error
-            } else {
-                // todo: load config
-                for (uint i = 0; i < jItems.Length; i++) {
-                    LoadItem(SceneItem(jItems[i]));
-                }
-            }
+            // RemoveAllItems();
+            // LoadJsonSceneConfig(_settingsTmpConfig);
+            startnew(CoroutineFunc(ReloadFromConfigCoro));
         }
+    }
+
+    void ReloadFromConfigCoro() {
+        while (SceneItems.Length > 0) {
+            RemoveItem(SceneItems[0]);
+            yield();
+        }
+        LoadJsonSceneConfig(_settingsTmpConfig, true);
     }
 
     UI::InputTextFlags DisabledMultlineInputFlags() {
@@ -397,6 +517,12 @@
         bool moveWayDown = MDisabledButton(!isItemSelected, Icons::AngleDoubleDown, bDims);
         AddSimpleTooltip("Move to Bottom");
 
+
+        if (addItem) {
+            LoadItem(DefaultSceneItem());
+        }
+
+
         // UI::Separator();
         PaddedSep();
 
@@ -439,7 +565,7 @@
         for (uint i = 0; i < SceneItems.Length; i++) {
             auto item = SceneItems[i];
             UI::AlignTextToFramePadding();
-            item.name = UI::InputText("##item-name-" + item.uid, item.name, anyChanged);
+            item.name = UI::InputText("##item-name-" + item.uid, item.name);
         }
 
         UI::NextColumn();
@@ -472,32 +598,39 @@
         ColHeading("Options");
         for (uint i = 0; i < SceneItems.Length; i++) {
             auto item = SceneItems[i];
-            bool isSelected = selectedUid == item.uid;
-
-            UI::AlignTextToFramePadding();
-            bool toggleVisibility = ButtonVariant(!item.visible, item.uid, Icons::Eye, Icons::EyeSlash, vec4(.7, .4, .1, 1) * .85);
-            AddSimpleTooltip(item.visible ? "Hide" : "Show");
-
+            DrawItemVisibilityButton(item);
             UI::SameLine();
-            bool deleteThisItem = UI::Button(Icons::Trash + "##" + item.uid);  // alt: Icons::TrashO
-            AddSimpleTooltip("Remove Item");
-
-            if (toggleVisibility) {
-                ToggleItemVisibility(item);
-            }
-
-            if (deleteThisItem)
-                RemoveItem(i, item);
+            DrawItemDeleteButton(item);
         };
 
         UI::Columns(1);
 
-        if (addItem) {
-            LoadItem(DefaultSceneItem());
+    }
+
+    void DrawItemDeleteButton(SceneItem@ item) {
+        bool deleteThisItem = UI::Button(Icons::Trash + "##" + item.uid);  // alt: Icons::TrashO
+        AddSimpleTooltip("Remove Item");
+        if (deleteThisItem)
+            RemoveItem(item);
+    }
+
+    void DrawItemVisibilityButton(SceneItem@ item) {
+        UI::AlignTextToFramePadding();
+        bool toggleVisibility = ButtonVariant(!item.visible, item.uid, Icons::Eye, Icons::EyeSlash, vec4(.7, .4, .1, 1) * .85);
+        AddSimpleTooltip(item.visible ? "Hide" : "Show");
+        if (toggleVisibility) {
+            ToggleItemVisibility(item);
         }
     }
 
-    void DrawSelectItemType(SceneItem@ item) {
+
+
+    void DrawSelectItemType(SceneItem@ item, bool showTypeLabel = false) {
+        if (showTypeLabel) {
+            UI::AlignTextToFramePadding();
+            UI::Text("Type:");
+            UI::SameLine();
+        }
         if (UI::BeginCombo("##item-type-" + item.uid, tostring(item.type))) {
             for (uint i = 0; i < AllItemTypes.Length; i++) {
                 auto ty = AllItemTypes[i];
@@ -511,8 +644,8 @@
         }
     }
 
-    private vec2 propsWindowSize = vec2(500, 300); // used to calculate size of children
-    private float xRatioItemList = .25;
+    private vec2 propsWindowSize = vec2(400, 400); // used to calculate size of children
+    private float xRatioItemList = .3;
     private float xRatioItemProps = 1 - xRatioItemList;
     // a window with 2 partitions: a list of items on the left, and the selected item's properties on the right
     void RenderAuxWindow() {
@@ -534,7 +667,7 @@
             }
 
             UI::SameLine();
-            if (UI::BeginChild("##item-props-main", propsWindowSize * vec2(xRatioItemProps, 1), border)) {
+            if (UI::BeginChild("##item-props-main", propsWindowSize * vec2(xRatioItemProps, 1), false)) {
                 DrawSelectedItemProperties();
                 UI::EndChild();
             }
@@ -570,24 +703,52 @@
         }
         auto item = GetSelectedItem();
         ColHeading("Item Properties: " + item.name);
-        DrawSelectItemType(item);
-        // top rows:
-        // - item name
-        // - item type
-        // - SkinZip
-        // - SkinUrl (for cars only)
+        // utility buttons
+        // - visibility, delete, copy(?), refresh skin, help(?), <other buttons?>
+        DrawItemOperationButtons(item);
+        VPad();
+
+        if (true || UI::CollapsingHeader("Type, Name, Skin")) {
+            // top rows:
+            // - item name
+            // - item type
+            // - SkinZip
+            // - SkinUrl (for cars only)
+            DrawSelectItemType(item, true);
+            item.name = DrawIPTextInput("item-name-" + item.uid, "Name:", item.name);
+            item.skinZip = DrawIPTextInput("item-skinZip-" + item.uid, "Skin.zip:", item.skinZip);
+            if (item.type == SItemType::CarSport)
+                item.skinUrl = DrawIPTextInput("item-skinUrl-" + item.uid, "Skin URL:", item.skinUrl);
+            else if (item.type == SItemType::CharacterPilot)
+                DrawItemAttachProps(item);
+
+        }
         // groups:
         // - position: x,y,z,delta
         // - angle: theat, checkbox for turntable
+        VPad();
+        DrawItemPositionProps(item);
+        DrawItemStepAdjustment();
+        VPad();
+        DrawItemAngleProps(item);
         // general function rows / extra
         // - copy position + angle from another item
         // - attach to another item
-        // utility buttons
-        // - visibility, delete, copy(?), refresh skin, help(?), <other buttons?>
-        DrawItemPositionProps(item);
+        DrawItemAttachProps(item);
+        // DrawItemCopyPosProps(item);
     }
 
-    private float itemPropFloatInputW = 100;
+    string DrawIPTextInput(const string &in id, const string &in label, const string &in value) {
+        bool changed = false;
+        UI::AlignTextToFramePadding();
+        UI::Text(label);
+        UI::SameLine();
+        auto ret = UI::InputText("##" + id, value, changed);
+        anyChanged = anyChanged || changed;
+        return ret;
+    }
+
+    private float itemPropFloatInputW = 120;
     private float itemPropFloatLabelW = 30;
     float DrawIPropFloatInput(const string &in id, const string &in label, float value, float step = 0.1, const string &in tooltip = "") {
         auto tl = UI::GetCursorPos();
@@ -595,9 +756,10 @@
         UI::Text(label);
         if (tooltip.Length > 0) AddSimpleTooltip(tooltip);
         UI::SetCursorPos(tl + vec2(itemPropFloatLabelW, 0));
-        // UI::SameLine();
         UI::SetNextItemWidth(itemPropFloatInputW);
-        return UI::InputFloat("##" + id + label, value, step);
+        auto ret = UI::InputFloat("##" + id + label, value, step);
+        if (Math::Abs(value - ret) > 0.0001) anyChanged = true;
+        return ret;
     }
 
     private float itemPropAdjustmentStep = 0.1;
@@ -606,13 +768,53 @@
         pos.x = DrawIPropFloatInput(item.uid, "  x:", pos.x, itemPropAdjustmentStep);
         pos.y = DrawIPropFloatInput(item.uid, "  y:", pos.y, itemPropAdjustmentStep);
         pos.z = DrawIPropFloatInput(item.uid, "  z:", pos.z, itemPropAdjustmentStep);
+        // if ((pos - item.pos).LengthSquared() > 0.0001) anyChanged = true;
         item.pos = pos;
-        itemPropAdjustmentStep = Math::Max(0.001, DrawIPropFloatInput(item.uid, "|Δ|", itemPropAdjustmentStep, 0.1, "Adjustment size for\n[+] and [-] buttons."));
     }
-    void DrawItemAngleProps(SceneItem@ item) {}
+    void DrawItemStepAdjustment() {
+        float prevIPAS = itemPropAdjustmentStep;
+        itemPropAdjustmentStep = DrawIPropFloatInput("step-adjustment", "|Δ|", itemPropAdjustmentStep, 1, "Adjustment size for\n[+] and [-] buttons.");
+        if (prevIPAS < itemPropAdjustmentStep) {
+            itemPropAdjustmentStep = Math::Min(2.0, prevIPAS * 2);
+        } else if (prevIPAS > itemPropAdjustmentStep) {
+            itemPropAdjustmentStep = Math::Max(0.001, prevIPAS / 2);
+        }
+    }
+    void DrawItemAngleProps(SceneItem@ item) {
+        bool prevTt = item.tt;
+        item.angle = DrawIPropFloatInput(item.uid, "  θ:", item.angle, 1, "Angle");
+        item.tt = UI::Checkbox("Rotating?##" + item.uid, item.tt);
+        if (item.tt != prevTt) anyChanged = true;
+    }
     void DrawItemAttachProps(SceneItem@ item) {}
     void DrawItemSkinProps(SceneItem@ item) {}
-    void DrawItemOperationButtons(SceneItem@ item) {}
+
+    void DrawItemOperationButtons(SceneItem@ item) {
+        DrawItemRegenButton(item);
+        UI::SameLine();
+        DrawItemVisibilityButton(item);
+        UI::SameLine();
+        DrawItemDuplicateButton(item);
+        SameLineWithDummyX(100);
+        DrawItemDeleteButton(item);
+    }
+
+    void DrawItemRegenButton(SceneItem@ item) {
+        bool doRegen = MDisabledButton(!item.visible, Icons::Refresh + "##ips-type-regen");
+        AddSimpleTooltip("Remove and re-add the in-scene item.\n\\$888(Useful if the item glitches.)");
+        if (doRegen) {
+            OnItemTypeChanged(item); // we reload the item in full
+        }
+    }
+
+    void DrawItemDuplicateButton(SceneItem@ item) {
+        bool duplicate = UI::Button(Icons::FilesO + "##ips-duplicate");
+        AddSimpleTooltip("Duplicate");
+        if (duplicate) {
+            NotifyFailure("todo: implement duplication");
+            // OnItemTypeChanged(item);
+        }
+    }
 }
 
 funcdef void SceneItemFunc(SceneItem@ item);
@@ -626,7 +828,7 @@ uint RandUint() {
 const string GenUID() {
     uint a = RandUint();
     string uid = "01234567";
-    for (uint i = 0; i < uid.Length; i++) {
+    for (int i = 0; i < uid.Length; i++) {
         uid[i] = ToSingleHexCol(a >> (4*i));
     }
     return uid.SubStr(0, 3) + "-" + uid.SubStr(3, 5);
@@ -710,4 +912,23 @@ class SItemState {
     MwId get_SceneId() { return _SceneId; }
     MwId get_ItemId() { return _ItemId; }
     void set_ItemId(MwId NewItemId) { _ItemId = NewItemId; }
+}
+
+class SceneCamera : SceneItem {
+    float fov = InitCameraFov;
+    SceneCamera() {
+        super("camera", "Camera", SItemType::CustomMesh, false, InitCameraLoc, InitCameraAngle, false, false, MaybeOfString(), "", "", 1);
+    }
+
+    SceneCamera(Json::Value &in j) {
+        fov = float(j['fov']);
+        super(j);
+
+    }
+
+    Json::Value ToJson() override {
+        auto j = SceneItem::ToJson();
+        j['fov'] = this.fov;
+        return j;
+    }
 }

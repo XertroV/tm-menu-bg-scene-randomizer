@@ -1,6 +1,15 @@
 /* Notes: */
 
-SceneRandomizer@ g_SceneRand = SceneRandomizer();
+SceneRandomizer@ g_SceneRand = SceneRandomizer(); // doesn't do anything atm I think
+
+/* ReentrancyLocker usage:
+    auto lockObj = Lock("SomeId"); // get lock; define this instance locally, don't keep it around
+    if (lockObj is null) return true; // check not null
+    bool ret = OnInteceptedX(...); // main logic
+    lockObj.Unlock(); // optional, will call this via destuctor so GC is mb okay
+    return ret;
+*/
+ReentrancyLocker@ Safety = ReentrancyLocker();
 
 void Main() {
     // we do stuff through coros so settings have a chance to load
@@ -8,8 +17,12 @@ void Main() {
 }
 
 void Render() {
-    if (CurrentScene !is null)
+    if (CurrentScene !is null && Safety !is null) {
+        InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+        if (l is null) return;
         CurrentScene.RenderUI();
+        l.Unlock();
+    }
 }
 
 
