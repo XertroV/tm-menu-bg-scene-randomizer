@@ -1,6 +1,6 @@
 // originally from rebind-master
 
-vec2 GetMenuItemSize(float cols = 2) {
+vec2 GetMenuItemSize(float cols = 1) {
     return vec2(UI::GetWindowContentRegionWidth() / cols - 2 * (cols - 1), UI::GetTextLineHeightWithSpacing());
 }
 
@@ -20,14 +20,22 @@ void ModCursorPos(vec2 deltas) {
     UI::SetCursorPos(UI::GetCursorPos() + deltas);
 }
 
-bool MenuItemNoClose(const string &in label, const string &in shortcut = "", bool selected = false, bool enabled = true) {
-    bool hovered = MouseHoveringRegion(UI::GetWindowPos() + UI::GetCursorPos(), GetMenuItemSize());
+vec2 GetScrollPos() {
+    // scroll pos is like the offset from top left of the region
+    return vec2(UI::GetScrollX(), UI::GetScrollY());
+    // UI::GetContentRegionAvail();
+    // print(vec2(UI::GetScrollX(), UI::GetScrollY()).ToString() + " out of " + vec2(UI::GetScrollMaxX(), UI::GetScrollMaxY()).ToString());
+    //  / vec2(UI::GetScrollMaxX(), UI::GetScrollMaxY());
+}
+
+bool SelectablePseudoButton(const string &in id, const string &in label, bool selected = false, bool enabled = true) {
+    bool hovered = MouseHoveringRegion(UI::GetWindowPos() + UI::GetCursorPos() - GetScrollPos(), GetMenuItemSize());
     float alpha = hovered ? 1.0 : 0.0;
 
     UI::PushStyleColor(UI::Col::ChildBg, vec4(.231, .537, .886, alpha));
     UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(2,2));
 
-    UI::BeginChild("c-" + label, GetMenuItemSize());
+    UI::BeginChild("c-" + label + "##" + id, GetMenuItemSize());
     // "pad" top a bit
     ModCursorPos(vec2(GetSpacingBetweenLines(), GetSpacingBetweenLines()));
     // store current cursor pos
