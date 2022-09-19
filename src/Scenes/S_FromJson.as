@@ -529,39 +529,40 @@ class S_FromJson : Scene {
 
         int nCols = 5;
 
-        // note: initially I went with a table b/c I know them,
-        // but I decided to go with columns after trying them out
-        // and with AlignTextToFramePadding worked as expected.
-        // the following table code is legacy.
-        auto tFlags = UI::TableFlags::None
-            | UI::TableFlags::Borders
-            | UI::TableFlags::SizingStretchProp
-            | UI::TableFlags::PadOuterX
-            ;
-        if (UI::BeginTable("s-fromjson-scene-builder-table", nCols, tFlags)) {
-            UI::TableSetupColumn("UID");
-            UI::TableSetupColumn("Name");
-            UI::TableSetupColumn("Type");
-            UI::TableSetupColumn("Selected"); // button if not selected,
-            UI::TableSetupColumn("Options"); // hide / delete
-            UI::PushFont(stdBold);
-            UI::TableHeadersRow();
-            UI::PopFont();
-            UI::EndTable();
-        }
+        // // note: initially I went with a table b/c I know them,
+        // // but I decided to go with columns after trying them out
+        // // and with AlignTextToFramePadding worked as expected.
+        // // the following table code is legacy.
+        // auto tFlags = UI::TableFlags::None
+        //     | UI::TableFlags::Borders
+        //     | UI::TableFlags::SizingStretchProp
+        //     | UI::TableFlags::PadOuterX
+        //     ;
+        // if (UI::BeginTable("s-fromjson-scene-builder-table", nCols, tFlags)) {
+        //     UI::TableSetupColumn("UID");
+        //     UI::TableSetupColumn("Name");
+        //     UI::TableSetupColumn("Type");
+        //     UI::TableSetupColumn("Selected"); // button if not selected,
+        //     UI::TableSetupColumn("Options"); // hide / delete
+        //     UI::PushFont(stdBold);
+        //     UI::TableHeadersRow();
+        //     UI::PopFont();
+        //     UI::EndTable();
+        // }
 
-        PaddedSep();
+        // PaddedSep();
 
-        UI::Columns(nCols, "s-fromjson-scene-builder-cols", false);
+        // -1 b/c hide UID
+        UI::Columns(nCols-1, "s-fromjson-scene-builder-cols", false);
 
-        ColHeading("UID");
-        ForEachItem(function(SceneItem@ item) {
-            bool s = cast<S_FromJson>(CurrentScene).ItemIsSelected(item);
-            UI::AlignTextToFramePadding();
-            UI::Text((s ? "\\$9e3" : "") + item.uid + "\\$z");
-        });
+        // ColHeading("UID");
+        // ForEachItem(function(SceneItem@ item) {
+        //     bool s = cast<S_FromJson>(CurrentScene).ItemIsSelected(item);
+        //     UI::AlignTextToFramePadding();
+        //     UI::Text((s ? "\\$9e3" : "") + item.uid + "\\$z");
+        // });
+        // UI::NextColumn();
 
-        UI::NextColumn();
         ColHeading("Name");
         for (uint i = 0; i < SceneItems.Length; i++) {
             auto item = SceneItems[i];
@@ -591,6 +592,7 @@ class S_FromJson : Scene {
             } else {
                 if (UI::Button("Select##" + item.uid)) {
                     selectedUid = item.uid;
+                    SceneBuilderAuxWindowVisible = true;
                 }
             }
         };
