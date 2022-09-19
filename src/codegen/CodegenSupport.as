@@ -1,6 +1,7 @@
 shared enum SItemType {
   CarSport,
-  CharacterPilot
+  CharacterPilot,
+  CustomMesh
 }
 
 shared Json::Value Vec3ToJsonObj(vec3 &in v) {

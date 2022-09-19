@@ -3,6 +3,7 @@
     Json::Value@ JsonConfig;
     array<SceneItem@> SceneItems;
     dictionary@ ItemLookup = {}; // UID -> SceneItem
+    dictionary@ ItemStates = {}; // UID -> SItemState
 
     // array<SceneItem@> SceneEntries = {};
     private uint MyVersion = 0;
@@ -18,13 +19,17 @@
     vec3 MM_CarPos;
 
     // state of scene for reference and cleanup
-    MwId[] LocalItems;
+    // MwId[] LocalItems;
 
     // array<SyncdItem@> SyncdCars;
     // uint[] ItemIxsSyncdToMMCar;
     // vec3[] InitCarPositionsBySIx; // SIx == 'syncd inxex' via ItemIxsSyncdToMMCar (indexes of this array and that one correspond to the same local item)
 
+#if DEV
+    bool SceneBuilderAuxWindowVisible = true;
+#else
     bool SceneBuilderAuxWindowVisible = false;
+#endif
 
     /*
 
@@ -55,8 +60,11 @@
     }
 
     void RenderUI() override {
+        InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+        if (l is null) return;
         if (SceneBuilderAuxWindowVisible)
             RenderAuxWindow();
+        l.Unlock();
     }
 
     /*
@@ -132,6 +140,8 @@
 
     bool anyChanged = false;  // track if anything was changed by the user this loop -- need to know so we can update json
 
+    // avoid calling MenuSceneMgr stuff here -- it's for background stuff.
+    // Scene updates should be done in Update();
     void MainLoop() override {
         while (true) {
             yield();
@@ -139,6 +149,21 @@
                 // todo
                 anyChanged = false;
             }
+        }
+    }
+
+    private float t = Time::Now;
+    void Update(float dt) {
+        t += dt;
+        SetAllItemPositions();
+    }
+
+    void SetAllItemPositions() {
+        for (uint i = 0; i < SceneItems.Length; i++) {
+            auto item = SceneItems[i];
+            auto state = GetItemState(item);
+            MenuSceneMgr.ItemSetLocation(SceneId, state.ItemId, item.pos, item.angle, item.tt);
+            // trace("Set item " + state.ItemId.Value + " location to " + item.pos.ToString());
         }
     }
 
@@ -156,7 +181,7 @@
     MwId CreateCarItem(const string &in SkinName = "Stadium_AUS", const string &in SkinUrl = "", SyncdItem@ reference = null) {
         string sfx = SkinName.EndsWith(".zip") ? "" : ".zip";
         auto newId = MenuSceneMgr.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\" + SkinName + sfx, SkinUrl);
-        LocalItems.InsertLast(newId);
+        // LocalItems.InsertLast(newId);
         // if (reference !is null)
         //     SyncdCars.InsertLast(); // LocalItems.Length will always be >= 0 b/c we just appended to it
         return newId;
@@ -166,6 +191,7 @@
         // todo: other logic about creating the item in the scene, etc
         SceneItems.InsertLast(@item);
         ItemLookup[item.uid] = @item;
+        AddToScene(item);
         // todo: regen config
     }
 
@@ -173,25 +199,62 @@
         if (SceneItems[ix] != item) {
             ErrorAndThrow('Tried to remove a scene item with a mismatching index');
         }
-        // todo: handle
-        warn("todo: handle attached and/or otherwise interconnected items.");
+        RemoveFromScene(item);
         ItemLookup.Delete(item.uid);
         SceneItems.RemoveAt(ix);
-        // todo: call ItemDestroy
+    }
+
+    void RemoveFromScene(SceneItem@ item) {
+        // todo: handle
+        warn("todo: handle attached and/or otherwise interconnected items.");
+        auto state = GetItemState(item);
+        MenuSceneMgr.ItemDestroy(state.SceneId, state.ItemId);
+        ItemStates.Delete(item.uid);
     }
 
     void ToggleItemVisibility(SceneItem@ item) {
         item.visible = !item.visible;
-        (item.visible ? SceneItemFunc(AddToScene) : SceneItemFunc(RemoveFromScene))(item);
+        item.visible ? AddToScene(item) : RemoveFromScene(item);
     }
 
     void AddToScene(SceneItem@ item) {
-        MenuSceneMgr.ItemCreate(SceneId, tostring(item.type), item.skinZip, item.skinUrl);
+        if (ItemStates.Exists(item.uid)) throw("Called AddToScene on an item that exists.");
+        auto id = _AddToSceneRaw(item);
+        ItemStates[item.uid] = @SItemState(SceneId, id);
     }
 
-    void RemoveFromScene(SceneItem@ item) {
+    private MwId _AddToSceneRaw(SceneItem@ item) {
+        // custom meshes are character pilots
+        auto ty = item.type == SItemType::CustomMesh ? SItemType::CharacterPilot : item.type;
+        // the dir that skins must be in
+        bool isPilot = ty == SItemType::CharacterPilot;
+        auto _skinDir = isPilot ? "HelmetPilot" : "CarSport";
+        auto _skinZip = item.skinZip.Length > 0 ? item.skinZip : (isPilot ? "StadiumFemale.zip" : "Stadium_AUS.zip");
 
+
+        auto id = MenuSceneMgr.ItemCreate(SceneId, tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, item.skinUrl);
+
+
+        trace("_AddToSceneRaw: " + string::Join({tostring(SceneId.Value), tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, "=>", tostring(id.Value)}, ", "));
+        return id;
     }
+
+    void OnItemTypeChanged(SceneItem@ item) {
+        auto state = GetItemState(item);
+        if (state is null) return;
+        // remove old item from scene
+        auto oldId = state.ItemId;
+        MenuSceneMgr.ItemDestroy(SceneId, state.ItemId);
+        // add new item to scene and update state
+        state.ItemId = _AddToSceneRaw(item);
+        trace("Item Type Changed; oldId:" + oldId.Value + ", newId:" + state.ItemId.Value);
+    }
+
+    SItemState@ GetItemState(SceneItem@ item) {
+        return cast<SItemState>(ItemStates[item.uid]);
+    }
+
+    // void Template(SceneItem@ item) {}
 
     /*
 
@@ -228,6 +291,7 @@
         UI::Dummy(vec2(30, 0));
         UI::SameLine();
         bool shouldLoadConfig = UI::Button("Load Scene Config", vec2(150, UI::GetFrameHeight()));
+        UI::Text("\\$f91Todo: cache json to avoid long frame times");
 
         // todo: update saved config each time scene is altered + allow for changes to be made to the textbox
         // sorta manual formatting so it's kinda pretty printed.
@@ -286,6 +350,14 @@
         return selectedUid == item.uid;
     }
 
+    bool IsAnyItemSelected() {
+        return selectedUid.Length > 0 && ItemLookup.Exists(selectedUid);
+    }
+
+    SceneItem@ GetSelectedItem() {
+        return cast<SceneItem>(ItemLookup[selectedUid]);
+    }
+
     // ui gets laggy (30ms frame times) around 36 entries for me
 
     void RenderSceneBuilder() {
@@ -298,8 +370,7 @@
         uint rightButtons = 4;
         float rbWidth = (rightButtons) * bDims.x + (rightButtons) * xSep;
         float xSpaceLeft = UI::GetContentRegionAvail().x - rbWidth - bDims.x - xSep;
-
-        bool isItemSelected = selectedUid.Length > 0 && ItemLookup.Exists(selectedUid);
+        bool isItemSelected = IsAnyItemSelected();
 
         bool addItem = UI::Button(Icons::Plus, bDims);
         AddSimpleTooltip("Add Item");
@@ -375,15 +446,7 @@
         ColHeading("Type");
         ForEachItem(function(SceneItem@ item) {
             UI::AlignTextToFramePadding();
-            if (UI::BeginCombo("##item-type-" + item.uid, tostring(item.type))) {
-                for (uint i = 0; i < AllItemTypes.Length; i++) {
-                    auto ty = AllItemTypes[i];
-                    if (UI::Selectable(tostring(ty), ty == item.type)) {
-                        item.type = ty;
-                    }
-                }
-                UI::EndCombo();
-            }
+            cast<S_FromJson>(CurrentScene).DrawSelectItemType(item);
         });
 
         UI::NextColumn();
@@ -434,10 +497,49 @@
         }
     }
 
+    void DrawSelectItemType(SceneItem@ item) {
+        if (UI::BeginCombo("##item-type-" + item.uid, tostring(item.type))) {
+            for (uint i = 0; i < AllItemTypes.Length; i++) {
+                auto ty = AllItemTypes[i];
+                if (UI::Selectable(tostring(ty), ty == item.type)) {
+                    bool typeChanged = item.type != ty;
+                    item.type = ty;
+                    if (typeChanged) OnItemTypeChanged(item);
+                }
+            }
+            UI::EndCombo();
+        }
+    }
+
+    private vec2 propsWindowSize = vec2(500, 300); // used to calculate size of children
+    private float xRatioItemList = .25;
+    private float xRatioItemProps = 1 - xRatioItemList;
+    // a window with 2 partitions: a list of items on the left, and the selected item's properties on the right
     void RenderAuxWindow() {
         if (UI::Begin("Scene Builder Item Properties", SceneBuilderAuxWindowVisible, UI::WindowFlags::NoCollapse | UI::WindowFlags::AlwaysAutoResize)) {
-            UI::Text("-------------------------------------------------------------------------------");
-            UI::TextWrapped("todo: add per-item UI here (position, etc)\n\n\n\n\n\n\n\n\n:YEP:");
+            UI::PushStyleVar(UI::StyleVar::ChildBorderSize, 1.0);
+            UI::PushStyleColor(UI::Col::Border, vec4(.8, .8, .8, .8));
+            bool border = true;
+            if (UI::BeginChild("##item-props-item-select", propsWindowSize * vec2(xRatioItemList, 1), border)) {
+                ColHeading("Items:", false);
+                SameLineWithDummyX(28);
+                if (TinyButton("+##ip-add-item")) LoadItem(DefaultSceneItem());
+                UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(0,0));
+                if (UI::BeginChild("##ip-list-of-items", UI::GetContentRegionAvail(), false)) {
+                    DrawShortListOfItems();
+                    UI::EndChild();
+                }
+                UI::PopStyleVar();
+                UI::EndChild();
+            }
+
+            UI::SameLine();
+            if (UI::BeginChild("##item-props-main", propsWindowSize * vec2(xRatioItemProps, 1), border)) {
+                DrawSelectedItemProperties();
+                UI::EndChild();
+            }
+            UI::PopStyleColor();
+            UI::PopStyleVar(1);
         }
         UI::End();
     }
@@ -449,18 +551,83 @@
     }
 
     SceneItem@ DefaultSceneItem() {
-        return SceneItem(GenUID(), "Item " + SceneItems.Length, SItemType::CarSport, true, vec3(), 180, false, true, MaybeOfString(), "", "", 1);
+        return SceneItem(GenUID(), "Item " + SceneItems.Length, SItemType::CarSport, true, vec3(-.8, 0, -2), 180, false, true, MaybeOfString(), "", "", 1);
     }
+
+    void DrawShortListOfItems() {
+        for (uint i = 0; i < SceneItems.Length; i++) {
+            auto item = SceneItems[i];
+            if (SelectablePseudoButton("item-quick-select-" + item.uid, item.name, ItemIsSelected(item), true)) {
+                selectedUid = item.uid;
+            }
+        }
+    }
+
+    void DrawSelectedItemProperties() {
+        if (!IsAnyItemSelected()) {
+            UI::Text("Please select an item.");
+            return;
+        }
+        auto item = GetSelectedItem();
+        ColHeading("Item Properties: " + item.name);
+        DrawSelectItemType(item);
+        // top rows:
+        // - item name
+        // - item type
+        // - SkinZip
+        // - SkinUrl (for cars only)
+        // groups:
+        // - position: x,y,z,delta
+        // - angle: theat, checkbox for turntable
+        // general function rows / extra
+        // - copy position + angle from another item
+        // - attach to another item
+        // utility buttons
+        // - visibility, delete, copy(?), refresh skin, help(?), <other buttons?>
+        DrawItemPositionProps(item);
+    }
+
+    private float itemPropFloatInputW = 100;
+    private float itemPropFloatLabelW = 30;
+    float DrawIPropFloatInput(const string &in id, const string &in label, float value, float step = 0.1, const string &in tooltip = "") {
+        auto tl = UI::GetCursorPos();
+        UI::AlignTextToFramePadding();
+        UI::Text(label);
+        if (tooltip.Length > 0) AddSimpleTooltip(tooltip);
+        UI::SetCursorPos(tl + vec2(itemPropFloatLabelW, 0));
+        // UI::SameLine();
+        UI::SetNextItemWidth(itemPropFloatInputW);
+        return UI::InputFloat("##" + id + label, value, step);
+    }
+
+    private float itemPropAdjustmentStep = 0.1;
+    void DrawItemPositionProps(SceneItem@ item) {
+        auto pos = item.pos;  // if we just replace 'pos' with 'item.pos' below we get the error: 'expression is not an l-value'
+        pos.x = DrawIPropFloatInput(item.uid, "  x:", pos.x, itemPropAdjustmentStep);
+        pos.y = DrawIPropFloatInput(item.uid, "  y:", pos.y, itemPropAdjustmentStep);
+        pos.z = DrawIPropFloatInput(item.uid, "  z:", pos.z, itemPropAdjustmentStep);
+        item.pos = pos;
+        itemPropAdjustmentStep = Math::Max(0.001, DrawIPropFloatInput(item.uid, "|Δ|", itemPropAdjustmentStep, 0.1, "Adjustment size for\n[+] and [-] buttons."));
+    }
+    void DrawItemAngleProps(SceneItem@ item) {}
+    void DrawItemAttachProps(SceneItem@ item) {}
+    void DrawItemSkinProps(SceneItem@ item) {}
+    void DrawItemOperationButtons(SceneItem@ item) {}
 }
 
 funcdef void SceneItemFunc(SceneItem@ item);
 
-const string GenUID() {
+uint RandUint() {
     uint a = uint(Math::Rand(-0x7FFFFFFF, 0x7FFFFFFF)); // uint(-392_112_762) == 3_902_854_534; works as expected
-    print("Rand bounds: " + (-0x7FFFFFFF) + ", " + 0x7FFFFFFF + "; val = " + a + ", " + uint(a) + ", " + uint8(a));
+    // print("Rand bounds: " + (-0x7FFFFFFF) + ", " + 0x7FFFFFFF + "; val = " + a + ", " + uint(a) + ", " + uint8(a));
+    return a;
+}
+
+const string GenUID() {
+    uint a = RandUint();
     string uid = "01234567";
     for (uint i = 0; i < uid.Length; i++) {
-        uid[i] = ToSingleHexCol(a >> i);
+        uid[i] = ToSingleHexCol(a >> (4*i));
     }
     return uid.SubStr(0, 3) + "-" + uid.SubStr(3, 5);
 }
@@ -477,7 +644,7 @@ void ErrorAndThrow(const string &in msg) {
     throw(msg);
 }
 
-const SItemType[] AllItemTypes = {SItemType::CarSport, SItemType::CharacterPilot};
+const SItemType[] AllItemTypes = {SItemType::CarSport, SItemType::CharacterPilot, SItemType::CustomMesh};
 
 /*
 goal: enable easy access to new positions/angles for cars in the scene.
@@ -526,6 +693,21 @@ class SyncdItem {
     }
 }
 
-class SItemProps {
-    SItemProps() {}
+// class SItemProps {
+//     SItemProps() {}
+// }
+
+// tracks scene info like ItemId
+class SItemState {
+    private MwId _SceneId;
+    private MwId _ItemId;
+
+    SItemState(MwId _SceneId, MwId _ItemId) {
+        this._SceneId = _SceneId;
+        this._ItemId = _ItemId;
+    }
+
+    MwId get_SceneId() { return _SceneId; }
+    MwId get_ItemId() { return _ItemId; }
+    void set_ItemId(MwId NewItemId) { _ItemId = NewItemId; }
 }

@@ -44,6 +44,15 @@ bool ButtonVariant(bool useAlt, const string &in id, const string &in label1, co
     return ret;
 }
 
+// 16x16 button
+bool TinyButton(const string &in label) {
+    UI::PushStyleVar(UI::StyleVar::ButtonTextAlign, vec2(.5, .5));
+    UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(0, 0));
+    bool ret = UI::Button(label, vec2(16, 16));
+    UI::PopStyleVar(2);
+    return ret;
+}
+
 /* padding */
 
 void VPad() {
@@ -54,6 +63,12 @@ void PaddedSep() {
     VPad();
     UI::Separator();
     VPad();
+}
+
+void SameLineWithDummyX(float dummyWidth = 20) {
+    UI::SameLine();
+    UI::Dummy(vec2(dummyWidth, 0));
+    UI::SameLine();
 }
 
 /* heading */
@@ -81,10 +96,10 @@ void SubHeading(const string &in t) {
     UI::PopFont();
 }
 
-void ColHeading(const string &in t) {
+void ColHeading(const string &in t, bool padUnder = true) {
     UI::PushFont(stdBold);
     UI::Text(t);
-    VPad();
+    if (padUnder) VPad();
     UI::PopFont();
 }
 

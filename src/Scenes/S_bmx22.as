@@ -122,12 +122,19 @@ class S_bmx22 : Scene {
         CarItemId2 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium_FRA.zip", "");
         CarItemId3 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\Stadium_FRA.zip", "");
         // CarItemId3 = msm.ItemCreate(SceneId, "CarSport", "Skins\\Models\\CarSport\\ToyotaGT-86-Gazoo-Racing.zip", "");
-        RpgLandscapeId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RPG_Landscape.zip", "");
+        RpgLandscapeId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\..\\HelmetPilot\\RPG_Landscape.zip", "");
         BuildingsId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\TMTurbo_Buildings.zip", "");
         CustomItemId3 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RiggedCharacterPilot.zip", "");
         CustomItemId4 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\RiggedCharacterPilot2.zip", "");
         CustomItemId5 = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\NewPilotGold2.zip", "");
         // CustomItemId5 = msm.ItemCreate(SceneId, "Ornament", "Skins\\Models\\Item\\GPSRight.Item.Gbx", "");
+
+        // note: putting a skin in Skins\\Models\\CustomMesh did not work
+        // note: paths with .. can't get around the above
+        // RpgLandscapeId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\..\\CustomMesh\\RPG_Landscape.zip", "");
+
+        // note: paths with .. can work, though:
+        // RpgLandscapeId = msm.ItemCreate(SceneId, "CharacterPilot", "Skins\\Models\\HelmetPilot\\..\\HelmetPilot\\RPG_Landscape.zip", "");
 
         // CarItemId1 = msm.ItemCreate(SceneId, "CarSport", "", "");
         // bool tt = Math::Rand(0, 2) == 0;

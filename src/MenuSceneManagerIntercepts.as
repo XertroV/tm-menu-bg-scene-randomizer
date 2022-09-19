@@ -21,8 +21,12 @@ void CoroStartMe_InitCurrentScene() {
 }
 
 void Update(float dt) {
-    if (CurrentScene !is null)
+    if (CurrentScene !is null) {
+        InterceptLock@ l = Safety.Lock('MenuSceneMgr');
+        if (l is null) return;
         CurrentScene.Update(dt);
+        l.Unlock();
+    }
 }
 
 /* ReentrancyLocker usage:
