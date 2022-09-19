@@ -329,6 +329,7 @@ class S_FromJson : Scene {
         // todo: handle
         warn("todo: handle attached and/or otherwise interconnected items.");
         auto state = GetItemState(item);
+        trace('Removing item ' + state.ItemId.Value + ' from scene ' + state.SceneId.Value);
         MenuSceneMgr.ItemDestroy(state.SceneId, state.ItemId);
         ItemStates.Delete(item.uid);
     }
@@ -660,17 +661,17 @@ class S_FromJson : Scene {
                 UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(0,0));
                 if (UI::BeginChild("##ip-list-of-items", UI::GetContentRegionAvail(), false)) {
                     DrawShortListOfItems();
-                    UI::EndChild();
                 }
-                UI::PopStyleVar();
                 UI::EndChild();
+                UI::PopStyleVar();
             }
+            UI::EndChild();
 
             UI::SameLine();
             if (UI::BeginChild("##item-props-main", propsWindowSize * vec2(xRatioItemProps, 1), false)) {
                 DrawSelectedItemProperties();
-                UI::EndChild();
             }
+            UI::EndChild();
             UI::PopStyleColor();
             UI::PopStyleVar(1);
         }
