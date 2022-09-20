@@ -51,13 +51,24 @@ class S_FromJson : Scene {
 
     S_FromJson(CGameMenuSceneScriptManager@ msm) {
         @this.MenuSceneMgr = msm;
-        if (Setting_Scene_FromJson_LastJsonConfig.Length > 0) {
-            _settingsTmpConfig = Setting_Scene_FromJson_LastJsonConfig;
+        if (HasSavedSceneJson()) {
+            _settingsTmpConfig = ReadSavedSceneJson();
         }
+    }
+
+    bool HasSavedSceneJson() { return Setting_Scene_FromJson_LastJsonConfig.Length > 0; }
+    // seems like settings after the first line aren't saved.
+    string ReadSavedSceneJson() {
+        return Setting_Scene_FromJson_LastJsonConfig.Replace("\\n", "\n");
+    }
+    void WriteSavedSceneJson(const string &in s) {
+        Setting_Scene_FromJson_LastJsonConfig = s.Replace("\n", "\\n");
+        // trace("Wrote Setting_Scene_FromJson_LastJsonConfig: " + Setting_Scene_FromJson_LastJsonConfig);
     }
 
     void LoadJsonSceneConfig(const string &in config, bool canSleep = false) {
         if (config.Length == 0) return;
+        trace('Json scene config: ' + config);
         auto jConfig = Json::Parse(config);
         // Camera = SceneCamera(jConfig['camera']);
         auto jItems = jConfig['items'];
@@ -82,7 +93,7 @@ class S_FromJson : Scene {
         }
         _config += (SceneItems.Length > 0 ? "    ]" : "[]") + "\n";
         _config += "}";
-        Setting_Scene_FromJson_LastJsonConfig = _config;
+        WriteSavedSceneJson(_config);
         _settingsTmpConfig = _config;
         trace('Generated new config:'); // + _settingsTmpConfig);
         return _config;
@@ -147,7 +158,7 @@ class S_FromJson : Scene {
             HasCarId = true;
             msm.ItemDestroy(SceneId, CarItemId);
             try {
-                LoadJsonSceneConfig(Setting_Scene_FromJson_LastJsonConfig);
+                LoadJsonSceneConfig(ReadSavedSceneJson());
             } catch {
                 NotifyFailure("Failed to parse JSON scene config.");
             }
@@ -322,7 +333,7 @@ class S_FromJson : Scene {
                 break;
             }
         }
-        // SceneItems.RemoveAt(ix);
+        anyChanged = true;
     }
 
     void RemoveFromScene(SceneItem@ item) {
@@ -676,6 +687,7 @@ class S_FromJson : Scene {
             UI::EndChild();
             UI::PopStyleColor();
             UI::PopStyleVar(1);
+            // RenderSceneBuilder(); // debug: draw this in the item props window
         }
         UI::End();
     }
