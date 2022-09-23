@@ -1,3 +1,6 @@
+// [Setting category="General"]
+// Setting
+
 [Setting hidden]
 uint Setting_CameraSeed = 0;
 

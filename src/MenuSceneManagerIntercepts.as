@@ -4,23 +4,34 @@ Scene@ CurrentScene;
 void ResetCurrentScene(CGameMenuSceneScriptManager@ msm) {
     // @CurrentScene = S_CharModel();
     // @CurrentScene = S_bmx22();
+    @CurrentScene = null;
     @CurrentScene = S_FromJson(msm);
+}
+
+// is this within scope of the plugin (so we can leave some calls unaffected)
+bool get_MenuBgOutOfScope() {
+    return _currentPage != "HomePage";
 }
 
 void CoroStartMe_InitCurrentScene() {
     bool lastSceneNull = true;
     while (true) {
         yield();
-
         if (lastSceneNull && CurrentScene !is null) {
             CurrentScene.StartMainLoop();
         }
-
         lastSceneNull = CurrentScene is null;
     }
 }
 
+string _currentPage = "";
 void Update(float dt) {
+    // note: this isn't updated fast enough; we miss some calls.
+    // if (GI::InMainMenu()) {
+    //     string newPage = GetCurrentPage();
+    //     if (newPage != _currentPage) { trace('page changed from ' + _currentPage + ' to ' + newPage); }
+    //     _currentPage = newPage;
+    // }
     if (CurrentScene !is null) {
         InterceptLock@ l = Safety.Lock('MenuSceneMgr');
         if (l is null) return;
@@ -31,13 +42,20 @@ void Update(float dt) {
 
 
 bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
+    trace('SceneCreate called.');
+    _currentPage = GetCurrentPage();
+    trace('new page: ' + _currentPage);
+    if (MenuBgOutOfScope) {
+        @CurrentScene = null;
+        return true;
+    }
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
     wstring layout = stack.CurrentWString();
     @msm = cast<CGameMenuSceneScriptManager>(nod);
     ResetCurrentScene(msm);
-    print('SceneCreate called for layout: ' + string(layout));
+    // print('SceneCreate called for layout: ' + string(layout));
     if (CurrentScene !is null)
         ret = CurrentScene.OnSceneCreate(msm, layout);
     else
@@ -47,22 +65,29 @@ bool _SceneCreate(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _SceneDestroy(CMwStack &in stack, CMwNod@ nod) {
+    trace('SceneDestroy called.');
+    _currentPage = GetCurrentPage();
+    trace('new page: ' + _currentPage);
+    if (MenuBgOutOfScope) {
+        @CurrentScene = null;
+        return true;
+    }
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
-
     MwId SceneId = stack.CurrentId();
     @msm = cast<CGameMenuSceneScriptManager>(nod);
     if (CurrentScene !is null) {
         ret = CurrentScene.OnSceneDestroy(msm, SceneId);
-        @CurrentScene = null;
+        // @CurrentScene = null; // this breaks when transitioning from one 3d scene to another; eg home -> profile -> home
+        // nullify past scene in scene create instead
     }
-
     l.Unlock();
     return ret;
 }
 
 bool _CameraSetLocation0(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -80,6 +105,7 @@ bool _CameraSetLocation0(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _CameraSetLocation1(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -99,6 +125,7 @@ bool _CameraSetLocation1(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _CameraSetFromItem(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -115,6 +142,7 @@ bool _CameraSetFromItem(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _LightDir0Set(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -136,6 +164,7 @@ vec3 initCarPos = vec3(-1.8, 0.0, -.5);
 float xShift = .75;
 
 bool _ItemCreate0(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -154,6 +183,7 @@ bool _ItemCreate0(CMwStack &in stack, CMwNod@ nod) {
 
 // MwId SceneId, wstring ModelName, wstring SkinName, string SkinUrl
 bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -171,6 +201,7 @@ bool _ItemCreate(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _ItemDestroy(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -250,6 +281,7 @@ bool _ItemDestroy(CMwStack &in stack, CMwNod@ nod) {
 
 // ItemSetLocation(MwId SceneId, MwId ItemId, vec3 Position, float AngleDeg, bool IsTurntable)
 bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
 
@@ -271,6 +303,7 @@ bool _ItemSetLocation(CMwStack &in stack, CMwNod@ nod) {
 }
 
 bool _ItemAttachTo(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;
@@ -290,6 +323,7 @@ bool _ItemAttachTo(CMwStack &in stack, CMwNod@ nod) {
 
 // ItemSetVehicleState(MwId SceneId, MwId ItemId, float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke)
 bool _ItemSetVehicleState(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
 
@@ -317,6 +351,7 @@ string Vec3Str(vec3 v) {
 }
 
 bool _ItemSetPlayerState(CMwStack &in stack, CMwNod@ nod) {
+    if (MenuBgOutOfScope) return true;
     InterceptLock@ l = Safety.Lock('MenuSceneMgr');
     if (l is null) return true;
     bool ret = true;

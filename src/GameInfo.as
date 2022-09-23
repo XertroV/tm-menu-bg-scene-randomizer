@@ -129,6 +129,10 @@ namespace GI {
         return GetTmApp().MenuManager.MenuCustom_CurrentManiaApp.DataFileMgr;
     }
 
+    CGameDataFileManagerScript@ GetDataFileMgr() {
+        return GetTmApp().MenuManager.MenuCustom_CurrentManiaApp.DataFileMgr;
+    }
+
     CGameUserManagerScript@ GetCoreUserManagerScript() {
         return GetTmApp().UserManagerScript;
     }

@@ -95,7 +95,7 @@ class S_FromJson : Scene {
         _config += "}";
         WriteSavedSceneJson(_config);
         _settingsTmpConfig = _config;
-        trace('Generated new config:'); // + _settingsTmpConfig);
+        // trace('Generated new config:'); // + _settingsTmpConfig);
         return _config;
     }
 
@@ -125,7 +125,7 @@ class S_FromJson : Scene {
     */
 
     bool OnSceneCreate(CGameMenuSceneScriptManager@ msm, const string &in Layout) override {
-        @this.MenuSceneMgr = msm;
+        // @this.MenuSceneMgr = msm;
         return true;
     }
 
@@ -140,7 +140,7 @@ class S_FromJson : Scene {
     bool OnItemCreate(CGameMenuSceneScriptManager@ msm, MwId SceneId, const string &in ModelName, const string &in SkinName, const string &in SkinUrl) override {
         if (!HasCarId) {
             ExpectCarIdNext = true;
-            @this.MenuSceneMgr = msm;
+            // @this.MenuSceneMgr = msm;
             this.SceneId = SceneId;
             return true;
         }
@@ -188,13 +188,13 @@ class S_FromJson : Scene {
     bool HijackedScene = false;
 
     bool OnCameraSetLocation1(CGameMenuSceneScriptManager@ msm, MwId SceneId, vec3 Position, float AngleDeg, float FovY_Deg) override {
-        if (!HijackedScene) {
-            HijackedScene = true;
-            msm.SceneDestroy(SceneId);
-            auto nsid = msm.SceneCreate("Empty");
-            trace('NewSceneId: ' + nsid.Value);
-            return true;
-        }
+        // if (!HijackedScene) {
+        //     HijackedScene = true;
+        //     msm.SceneDestroy(SceneId);
+        //     auto nsid = msm.SceneCreate("Empty");
+        //     trace('NewSceneId: ' + nsid.Value);
+        //     return true;
+        // }
         return false;
     }
 
@@ -240,19 +240,28 @@ class S_FromJson : Scene {
             yield();
             if (anyChanged) {
                 // todo
-                trace('change detected');
+                // trace('change detected');
                 anyChanged = false;
                 GenerateSceneConfig();
             }
+            yield();
+            if (GetCurrentPage() != "HomePage") {
+                SceneBuilderAuxWindowVisible = false;
+            }
+            // print(GetCurrentPage() + ' & SceneBuilderAuxWindowVisible=' + (SceneBuilderAuxWindowVisible ? 't' : 'f'));
+            sleep(50);
         }
     }
 
     private float t = Time::Now;  // global time
-    uint lastLog = uint(Time::Now / 1000);  // for rate limiting update calls
+    uint lastLog = uint(Time::Now / 10000) - 1;  // for rate limiting update calls, but do an update immediately
     void Update(float dt) override {
         t += dt;
-        if (uint(Math::Floor(t / 1000)) > lastLog) {
-            // trace('Update called; dt=' + dt);
+        if (uint(Math::Floor(t / 10000)) > lastLog) {
+            trace('Update called; dt=' + dt
+                + ' MSM: ' + (MenuSceneMgr is null ? 'null' : 'not null')
+                + ' SBAuxWindow: ' + (SceneBuilderAuxWindowVisible ? 't' : 'f')
+                );
             lastLog++;
         }
         if (MenuSceneMgr !is null) {
@@ -364,6 +373,10 @@ class S_FromJson : Scene {
         bool isPilot = ty == SItemType::CharacterPilot;
         auto _skinDir = isPilot ? "HelmetPilot" : "CarSport";
         auto _skinZip = item.skinZip.Length > 0 ? item.skinZip : (isPilot ? "StadiumFemale.zip" : "Stadium_AUS.zip");
+        // refresh userdir media so recently added skins can be used
+        uint C_BrowserFilter_UserData = 4;
+        GI::GetDataFileMgr().Media_RefreshFromDisk(CGameDataFileManagerScript::EMediaType::Skins, C_BrowserFilter_UserData);
+        // create the item
         auto id = MenuSceneMgr.ItemCreate(SceneId, tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, item.skinUrl);
         trace("_AddToSceneRaw: " + string::Join({tostring(SceneId.Value), tostring(ty), "Skins\\Models\\" + _skinDir + "\\" + _skinZip, "=>", tostring(id.Value)}, ", "));
         return id;
