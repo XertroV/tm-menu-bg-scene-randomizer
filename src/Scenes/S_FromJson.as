@@ -156,24 +156,23 @@ class S_FromJson : Scene {
         if (!HasCarId && ExpectCarIdNext) {
             CarItemId = ItemId;
             HasCarId = true;
-            msm.ItemDestroy(SceneId, CarItemId);
-            try {
-                LoadJsonSceneConfig(ReadSavedSceneJson());
-            } catch {
-                NotifyFailure("Failed to parse JSON scene config.");
-            }
-            // auto newCar = CreateCarItem(); // IDs are re-used
-            /* testing: are item IDs reused? yes. both have an id of `0` here.
-            print("CarItemId: " + CarItemId.Value);
-            msm.ItemDestroy(SceneId, CarItemId);
-            print("newCarId: " + newCar.Value);
-            */
+            // startnew(CoroutineFunc(_AfterMenuCarInstantiated));
+            _AfterMenuCarInstantiated();
         }
         // if we get a set location on the car, we want to pass this through to all cars that are syncd
         if (HasCarId && ItemId.Value == CarItemId.Value) {
             OnMenuScriptSetCarLocation(Position, AngleDeg, IsTurntable);
         }
         return false;
+    }
+
+    void _AfterMenuCarInstantiated() {
+        msm.ItemDestroy(SceneId, CarItemId);
+        try {
+            LoadJsonSceneConfig(ReadSavedSceneJson());
+        } catch {
+            NotifyFailure("Failed to parse JSON scene config.");
+        }
     }
 
     bool OnItemSetVehicleState(CGameMenuSceneScriptManager@ msm, MwId SceneId, MwId ItemId, float Steer, bool Brakes, bool FrontLight, uint TurboLvl, uint BoostLvl, bool BurnoutSmoke) override {
