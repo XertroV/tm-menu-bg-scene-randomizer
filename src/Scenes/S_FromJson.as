@@ -59,11 +59,10 @@ class S_FromJson : Scene {
     bool HasSavedSceneJson() { return Setting_Scene_FromJson_LastJsonConfig.Length > 0; }
     // seems like settings after the first line aren't saved.
     string ReadSavedSceneJson() {
-        return Setting_Scene_FromJson_LastJsonConfig.Replace("\\n", "\n");
+        return Setting_Scene_FromJson_LastJsonConfig.Replace("\\\n", "\\n").Replace("\\n", "\n");
     }
     void WriteSavedSceneJson(const string &in s) {
-        Setting_Scene_FromJson_LastJsonConfig = s.Replace("\n", "\\n");
-        // trace("Wrote Setting_Scene_FromJson_LastJsonConfig: " + Setting_Scene_FromJson_LastJsonConfig);
+        Setting_Scene_FromJson_LastJsonConfig = s; // .Replace("\n", "\\n");
     }
 
     void LoadJsonSceneConfig(const string &in config, bool canSleep = false) {
@@ -167,9 +166,11 @@ class S_FromJson : Scene {
     }
 
     void _AfterMenuCarInstantiated() {
-        msm.ItemDestroy(SceneId, CarItemId);
         try {
-            LoadJsonSceneConfig(ReadSavedSceneJson());
+            auto savedScene = ReadSavedSceneJson();
+            Json::Parse(savedScene); // try to parse the json
+            msm.ItemDestroy(SceneId, CarItemId); // only if we can parse it, destroy the car
+            LoadJsonSceneConfig(savedScene); // then load the scene
         } catch {
             NotifyFailure("Failed to parse JSON scene config.");
         }
