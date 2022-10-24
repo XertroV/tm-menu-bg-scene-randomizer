@@ -2,8 +2,7 @@
 name     = "Menu BG Scene Randomizer"
 author   = "XertroV"
 category = "Settings"
-version  = "0.1.3"
-# requires openplanet 1.25.15
+version  = "0.1.4-pre"
 
 [script]
 #__DEFINES__
