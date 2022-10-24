@@ -245,7 +245,7 @@ class S_FromJson : Scene {
                 GenerateSceneConfig();
             }
             yield();
-            if (GetCurrentPage() != "HomePage") {
+            if (GetCurrentPage() != "HomePage" || GetApp().RootMap !is null) {
                 SceneBuilderAuxWindowVisible = false;
             }
             // print(GetCurrentPage() + ' & SceneBuilderAuxWindowVisible=' + (SceneBuilderAuxWindowVisible ? 't' : 'f'));
